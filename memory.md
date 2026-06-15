@@ -8,6 +8,7 @@ existing **FIAP Challenge** system (`C:\Programming\Java\FIAP\Challenge`). It co
 created. The web (Next.js on Vercel) keeps working unchanged.
 
 Min SDK 29, target/compile SDK 36, Java 17, AGP 9.1.1, Gradle 9.3.1, ViewBinding.
+Verified building/installing on a real **Samsung Galaxy S25 Ultra (Android 16 / API 36)** via adb.
 
 ---
 
@@ -16,20 +17,20 @@ Min SDK 29, target/compile SDK 36, Java 17, AGP 9.1.1, Gradle 9.3.1, ViewBinding
 ### Architecture (layers)
 ```
 com.tlean07.totvs
-├── TotvsApp                      composition root / service locator
+├── TotvsApp                      composition root / service locator (+ CrashReporter install)
 ├── network                      Retrofit + OkHttp stack
-│   ├── ApiClient                builds clients (main + refresh) + Retrofit
+│   ├── ApiClient                builds clients (main + refresh) + Retrofit (40s connect for Render cold start)
 │   ├── ApiService               endpoint definitions (same as web)
 │   ├── AuthInterceptor          adds Bearer + X-Request-ID + X-Device-Id (no Origin)
-│   ├── TokenAuthenticator       401 → single refresh → retry; forced logout on failure
+│   ├── TokenAuthenticator       401 → single refresh → retry; skips /auth/*; forced logout on failure
 │   ├── PersistentCookieJar      stores httpOnly refresh_token cookie (encrypted)
-│   ├── DataRepository / Calls   dashboard, transcrições (IA), alertas
+│   ├── DataRepository / Calls   dashboard, transcrições (paged + insights + JSON import), alertas, users
 │   ├── NetworkResult / ErrorMapper / AuthEvents
-│   └── dto/                     POJOs mirroring backend DTOs
+│   └── dto/                     POJOs mirroring backend DTOs (see below)
 ├── auth
 │   ├── AuthRepository           login / silentRefresh / logout
-│   ├── biometric/BiometricHelper   ported from LifeCode Kotlin ref → Java
-│   └── passkey/PasskeyManager      Credential Manager scaffold (next step)
+│   ├── biometric/BiometricHelper   ported from LifeCode Kotlin ref → Java (crash-hardened)
+│   └── passkey/PasskeyManager      Credential Manager scaffold (guarded init)
 ├── cas
 │   ├── DeviceManager            stable device id + binding to user (local CAS)
 │   └── DeviceInfo               mirrors planned mobile_devices collection
@@ -39,105 +40,127 @@ com.tlean07.totvs
 ├── security/SecurityManager     FLAG_SECURE, inactivity lock, debug detection
 ├── util
 │   ├── SafeAreaHelper           edge-to-edge WindowInsets (S25 Ultra, cutouts, gesture)
+│   ├── CrashReporter            writes uncaught stack traces to a file on device
 │   ├── AppExecutors / Callback / Logger (sanitised)
-└── ui  SplashActivity, login/, MainActivity (bottom nav),
-        dashboard/, ai/, profile/, security/, components/ (adapters)
+└── ui
+    ├── SplashActivity, login/LoginActivity, MainActivity (bottom nav)
+    ├── dashboard/                stats + custom charts (Donut/Bar) + recent alerts
+    ├── ai/AiFragment             paginated analyses + "Nova análise" bottom sheet (text + TOTVS JSON import)
+    ├── insights/                 BaseInsightsActivity + RiscosActivity + OportunidadesActivity (+ Adapter/Mapper/CardItem)
+    ├── alertas/AlertasActivity   full alerts screen (filters + mark-as-seen)
+    ├── profile/, security/, users/UsersActivity (admin)
+    └── components/               StatAdapter, AlertaAdapter, TranscricaoAdapter, DonutChartView, BarChartView, ChartEntry
 ```
+
+DTOs: AuthResponse, AuthUser, LoginRequest, ApiError, DashboardResponse (+ riscoPorTipo /
+oportunidadePorTipo maps), TranscricaoResponse, TranscricaoRequest, **PageResponse**,
+**TranscricaoInsightsResponse** (+ RiscoDto/RiscoConsolidadoDto/OportunidadeDto/OportunidadeConsolidadaDto),
+**TranscricaoImportResponse**, AlertaResponse, **UserDto**, **CreateUserRequest**.
 
 ### Endpoints reused (no backend change)
 - `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`
 - `GET /api/dashboard`
-- `GET /api/transcricoes`, `GET /api/transcricoes/{id}`, `POST /api/transcricoes`
-- `GET /api/alertas`, `PATCH /api/alertas/{id}/visto`
+- `GET /api/transcricoes`, `GET /api/transcricoes/paged?page&size`, `GET /api/transcricoes/{id}`
+- `POST /api/transcricoes` (create+analyse), `POST /api/transcricoes/import/totvs` (multipart JSON)
+- `GET /api/transcricoes/insights` (riscos/oportunidades, cached 5 min client-side)
+- `GET /api/alertas`, `GET /api/alertas/novos`, `PATCH /api/alertas/{id}/visto`
 - `GET /api/users`, `POST /api/users`, `PATCH /api/users/{id}/activate|deactivate` (admin)
 
-### Charts & admin (parity with web)
-- Dashboard charts: **DonutChartView** (distribuição de sentimento + legenda) and
-  **BarChartView** (riscos por tipo, oportunidades por tipo) — custom canvas views, no 3rd-party
-  lib. Same colors/labels as the web `app/page.tsx` (POSITIVO/NEGATIVO/…, CHURN/…, UPSELL/…).
-- **UsersActivity** (admin-only, opened from Perfil): lista de usuários, criar usuário
-  (nome/email/senha≥12/role), ativar/desativar, com resumo Total/Ativos/Admins. Espelha a página
-  `usuarios` da web. Botão "Gerenciar usuários" só aparece para `role == ADMIN`.
-- Splash: logo passa por `splash_logo.xml` (inset) para caber no círculo da SplashScreen do
-  Android 12+ (antes o wordmark era recortado).
+### Screens & features (parity with web)
+- **Splash** → silent refresh / biometric gate. Logo passes through `splash_logo.xml` (inset) so
+  the wordmark fits the circular Android-12+ SplashScreen mask (was being clipped).
+- **Login** — gradient background + floating `MaterialCardView`, hero title/subtitle, Material
+  `TextInputLayout`s with email/lock icons + password toggle, optional biometric quick-unlock.
+- **Dashboard** — 6 stat cards (Transcrições, Processadas, Oportunidades, Riscos, Alertas novos,
+  **Churn**), custom charts (Donut = sentimento + legend; Bar = riscos/oportunidades por tipo —
+  no 3rd-party lib, same colors/labels as web), recent alerts. Stat cards Oportunidades/Riscos/
+  Churn/Alertas are tappable → open the matching screen.
+- **Riscos / Oportunidades** (`insights/`) — full screens off `GET /transcricoes/insights`,
+  filter chips (tipo + severidade / tipo), summary stats, detail dialog. Shared `BaseInsightsActivity`.
+- **Alertas** (`AlertasActivity`) — full screen reusing the insights layout, filters by status
+  (Novo/Visto/Resolvido) + prioridade (Alto/Médio/Baixo), detail dialog with "Marcar como visto".
+- **Análises (AiFragment)** — infinite-scroll pagination; "Nova análise" is a **BottomSheet** with
+  Material inputs **and TOTVS JSON import** (file picker → `POST /transcricoes/import/totvs`).
+- **Usuários** (admin, from Perfil) — list + summary, "Novo usuário" **BottomSheet** (Material
+  inputs + role dropdown), ativar/desativar. Button only visible for `role == ADMIN`.
+- **Perfil / Segurança** — user + device (CAS) info, logout, biometric & secure-screen toggles,
+  device revoke.
 
-### Endpoints NOT created (intentional, additive backend design only)
-Documented for a future, retrocompatible backend PR (would not break web):
-`/api/mobile/devices/register|verify|me`, `/api/mobile/devices/{id}/revoke`,
-`/api/mobile/auth/passkey/challenge|verify`. Until then, server-side device control is
-provided by the existing `refresh_tokens` collection (logout + refresh-reuse revocation).
+### Dark mode (real DayNight support)
+- App theme is `DayNight`; the key piece is **`values-night/colors.xml`**, which redefines the
+  `*_light` tokens (referenced directly by layouts) to a dark navy palette → every screen flips
+  without touching layouts. Brand colors (navy gradients, accent green, chart hues) stay in both.
+- Adaptive component tokens (light + night): `button_primary`, `action_fg`/`action_stroke`,
+  `login_card`/`login_card_stroke`, `chart_track`/`chart_value`/`chart_label`, and chips
+  `chip_role/success/muted/warning/danger` (`_bg`/`_fg`) with `bg_pill_*` drawables.
+- Theme-aware chips applied to: user list (Administrador/Usuário, Ativo/Inativo) and the
+  **Análises status pill** (PROCESSADA→green, PROCESSANDO→blue, PENDENTE→amber, ERRO→red, theme-aware).
+- `DonutChartView`/`BarChartView` read DayNight colors. Status-bar icons forced white globally
+  (top of every screen is the navy gradient header).
 
 ### Tokens
-- **Access token**: custom HS256 JWT, 15 min, kept **in memory only** (never persisted).
-  Sent as `Authorization: Bearer`.
-- **Refresh token**: opaque, issued by the backend as an **httpOnly cookie** (`refresh_token`,
-  path `/api/auth`). Persisted by `PersistentCookieJar` inside `EncryptedSharedPreferences`
-  → exact same refresh mechanism as the web client, fully reused. Rotated on every refresh.
-- `TokenAuthenticator` performs a single, serialised refresh on 401; on failure it clears the
-  session and raises `AuthEvents.notifySessionExpired()` → routes to Login.
-- The backend `OriginValidationService` accepts requests with **no Origin** header, so the
-  native client passes; we never send an Origin.
+- **Access token**: custom HS256 JWT, 15 min, kept **in memory only**. Sent as `Authorization: Bearer`.
+- **Refresh token**: opaque httpOnly cookie (`refresh_token`, path `/api/auth`), persisted by
+  `PersistentCookieJar` inside `EncryptedSharedPreferences` → exact same refresh mechanism as web.
+- `TokenAuthenticator`: single serialised refresh on 401, **skips `/auth/*` paths** (so a wrong
+  login surfaces as 401 instead of triggering a refresh); on failure clears session + `AuthEvents`.
+- Backend `OriginValidationService` accepts requests with **no Origin** → native client passes.
 
-### Secure storage
-- `SecureStorage` = `EncryptedSharedPreferences` (AES256-GCM value / AES256-SIV key) with a
-  `MasterKey` in the Android Keystore. Holds: refresh cookie, device identity (CAS), biometric
-  & secure-screen flags, cached display user. Corrupt-store self-heal on init.
-- Plain SharedPreferences are never used for secrets. Logout/revoke wipe everything.
-- `Logger` redacts tokens/passwords/bearer/refresh cookie; logging only in debug.
+### Secure storage / hardening
+- `SecureStorage` = `EncryptedSharedPreferences` (AES256-GCM/SIV, Keystore `MasterKey`), self-heal
+  on corrupt store. Holds refresh cookie, device identity, biometric/secure-screen flags, cached user.
+- `Logger` redacts tokens/passwords/bearer/cookie; logs only in debug.
+- HTTPS enforced via `network_security_config` (cleartext only for `10.0.2.2`/localhost debug).
+- `FLAG_SECURE` on the authenticated shell (toggle in Segurança → "Proteger telas sensíveis";
+  turning it off is the supported way to take screenshots, then re-enable).
+- Inactivity lock after 120s → biometric re-auth on resume.
 
-### Biometrics / passkey
-- `BiometricHelper` (Java port of the Kotlin reference) uses AndroidX `BiometricPrompt` +
-  `BiometricManager` (STRONG/WEAK). **Difference from reference:** no email/password is stored;
-  biometrics only gate a *local* restore of the server session. Backend still validates every
-  request, so a revoked device/session can't be bypassed.
-- Flow: 1st login = email/password → offer to enable biometric → next cold start / resume
-  after the inactivity lock requires biometric before `silentRefresh`.
-- `PasskeyManager` wraps `CredentialManager` (Samsung Pass / GMS providers) as the scaffold for
-  the FIDO2 passkey flow once the three backend passkey endpoints exist.
+### Biometrics / CAS
+- `BiometricHelper` (Java, AndroidX BiometricPrompt STRONG/WEAK). No credentials stored; biometrics
+  only gate a *local* session restore. **Crash-hardened**: try/catch around `canAuthenticate` and
+  `authenticate`, isFinishing/isDestroyed guard, falls back to password instead of crashing.
+- `DeviceManager` issues a stable non-secret `devicePublicId` (UUID, encrypted), sent as
+  `X-Device-Id` for auditing; bound to the user on login. Revoke = local + server logout.
 
-### CAS / device binding
-- `DeviceManager` creates a stable, non-secret `devicePublicId` (UUID) on first run, stored
-  encrypted; sent on every request as `X-Device-Id` for backend auditing. Bound to the user id
-  on login (`DeviceInfo`, fields mirror the planned `mobile_devices` collection). Local revoke
-  + server logout (revokes the MongoDB refresh-token session) ends access.
+### Crash resilience (added after on-device testing)
+- **`CrashReporter`** (installed first in `TotvsApp.onCreate`) writes the full stack trace of any
+  uncaught exception to `Android/data/com.tlean07.totvs/files/last_crash.txt` (no adb needed).
+- Fragment async callbacks (Dashboard/AI/Alertas/etc.) guard `binding == null` before touching
+  views — fixed a real NPE crash on the S25 Ultra where a dashboard network result arrived after
+  the view was destroyed (tab switch / biometric unlock).
+- Profile/Security navigation callbacks guard `isAdded()`. PasskeyManager init wrapped in try/catch.
 
-### UI respects status/navigation bar
-- Theme draws edge-to-edge: transparent status & navigation bars,
-  `WindowCompat.setDecorFitsSystemWindows(false)`. `SafeAreaHelper` re-applies dynamic padding
-  from `WindowInsetsCompat` (systemBars + displayCutout + ime): top inset on every gradient
-  header, bottom inset on the bottom navigation. No hardcoded bar padding → correct on S25 Ultra
-  (tall/curved + cutout), gesture nav and 3-button nav.
+### Notable fixes
+- **Churn card**: was using the backend `churnsPotenciais` (never populated → always 0). Now uses
+  `riscoPorTipo["CHURN"]` (the real count, e.g. 133, same as the chart); card is tappable → Riscos.
+- **Backend URL**: debug build defaults to the Render backend
+  (`https://challenge-totvs-backend.onrender.com/api/`) so it works out of the box; connect timeout 40s
+  for Render free-tier cold starts. (Swap to `http://10.0.2.2:8080/api/` for a local backend.)
+
+### Endpoints NOT created (intentional, additive backend design only)
+`/api/mobile/devices/register|verify|me`, `/api/mobile/devices/{id}/revoke`,
+`/api/mobile/auth/passkey/challenge|verify` — documented for a future retrocompatible PR. Until
+then, server-side device control = the existing `refresh_tokens` collection (logout + reuse revocation).
 
 ### Visual identity reused from web
-- Palette: primary `#1A365D`, secondary `#2B6CB0`, accent `#38A169`, header gradient
-  `#173A64→#2868A8`, bg `#F8FAFC` / login `#EEF3F8` — same as `globals.css`.
-- Logo `totvs-logo.png` copied from `frontend/public` → splash, login, dashboard headers.
-- Tagline "Conversational Intelligence". Light + dark themes, Material cards/buttons, rounded
-  inputs, loading/empty/error states.
-
-### Security hardening
-- HTTPS enforced via `network_security_config` (cleartext only for `10.0.2.2`/localhost debug).
-- `FLAG_SECURE` on the authenticated shell (toggle in Security screen).
-- Inactivity lock after 120s → biometric re-auth on resume.
-- Debounced auth buttons; backend rate-limits login/refresh.
-- App never decides permissions — backend validates user/token/device/role.
+Palette: primary `#1A365D`, secondary `#2B6CB0`, accent `#38A169`, header gradient `#173A64→#2868A8`.
+Logo `totvs-logo.png` from `frontend/public`. Tagline "Conversational Intelligence".
 
 ---
 
 ## How to run
-- Backend running (local `:8080` for debug → emulator host `http://10.0.2.2:8080/api/`,
-  configured in `app/build.gradle` `buildConfigField API_BASE_URL`). Release points at
-  `https://challenge-totvs-backend.onrender.com/api/`.
-- Open in Android Studio or CLI; `local.properties` has the SDK path.
+- Backend reachable. Debug build → Render by default (override to `10.0.2.2:8080` for local).
+- Android Studio (▶) or CLI. `local.properties` has the SDK path. Tested via
+  `adb install -r app/build/outputs/apk/debug/app-debug.apk`.
 
 ## Build / APK
 - Debug APK: `./gradlew :app:assembleDebug` → `app/build/outputs/apk/debug/app-debug.apk`.
-- Release APK: `./gradlew :app:assembleRelease` (needs a signing config; not added yet).
-- Unit tests: `./gradlew :app:testDebugUnitTest`. **Verified: both build green (Gradle 9.3.1).**
+- Release APK: `./gradlew :app:assembleRelease` (needs signing config; not added yet).
+- Unit tests: `./gradlew :app:testDebugUnitTest`. Build verified green (Gradle 9.3.1).
 
 ## Limitations / next steps
-- Backend mobile/passkey endpoints not yet implemented → passkey is a scaffold; CAS revocation
-  is local + via logout (refresh-token revocation), not a dedicated device API yet.
-- No release signing config / certificate pinning (avoid breaking Render cert rotation).
-- AI = transcription analysis (no standalone chat endpoint exists in the backend).
-- On-device instrumented tests not run here (no emulator); manual test matrix in README.
+- Backend mobile/passkey endpoints not yet implemented → passkey is a scaffold; CAS revocation is
+  local + via logout, not a dedicated device API yet.
+- No release signing config / certificate pinning.
+- AI = transcription analysis (no standalone chat endpoint in the backend).
+- Audio import (web VoiceRecorder) not ported; only text + TOTVS JSON import on mobile.
