@@ -26,6 +26,7 @@ import com.tlean07.totvs.ui.components.ChartEntry;
 import com.tlean07.totvs.ui.components.DonutChartView;
 import com.tlean07.totvs.ui.components.StatAdapter;
 import com.tlean07.totvs.ui.components.StatItem;
+import com.tlean07.totvs.ui.alertas.AlertasActivity;
 import com.tlean07.totvs.ui.insights.OportunidadesActivity;
 import com.tlean07.totvs.ui.insights.RiscosActivity;
 import com.tlean07.totvs.util.SafeAreaHelper;
@@ -87,6 +88,7 @@ public class DashboardFragment extends Fragment {
         binding.statsRecycler.setAdapter(statAdapter);
         binding.alertsRecycler.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.alertsRecycler.setAdapter(alertaAdapter);
+        alertaAdapter.setOnClick(a -> openAlertas());
 
         AuthUser user = TotvsApp.get().session().getCurrentUser();
         if (user != null && user.name != null) {
@@ -126,7 +128,8 @@ public class DashboardFragment extends Fragment {
                 R.color.totvs_opportunity, StatItem.ACTION_OPORTUNIDADES));
         stats.add(new StatItem("Riscos", String.valueOf(d.totalRiscos),
                 R.color.totvs_danger, StatItem.ACTION_RISCOS));
-        stats.add(new StatItem("Alertas novos", String.valueOf(d.alertasNovos), R.color.totvs_warning));
+        stats.add(new StatItem("Alertas novos", String.valueOf(d.alertasNovos),
+                R.color.totvs_warning, StatItem.ACTION_ALERTAS));
         stats.add(new StatItem("Churn potencial", String.valueOf(d.churnsPotenciais), R.color.totvs_danger));
         statAdapter.submit(stats);
 
@@ -213,6 +216,8 @@ public class DashboardFragment extends Fragment {
             openRiscos();
         } else if (StatItem.ACTION_OPORTUNIDADES.equals(item.action)) {
             openOportunidades();
+        } else if (StatItem.ACTION_ALERTAS.equals(item.action)) {
+            openAlertas();
         }
     }
 
@@ -222,6 +227,10 @@ public class DashboardFragment extends Fragment {
 
     private void openOportunidades() {
         startActivity(new Intent(requireContext(), OportunidadesActivity.class));
+    }
+
+    private void openAlertas() {
+        startActivity(new Intent(requireContext(), AlertasActivity.class));
     }
 
     @Override

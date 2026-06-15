@@ -16,7 +16,16 @@ import java.util.List;
 /** Recent alerts list. */
 public class AlertaAdapter extends RecyclerView.Adapter<AlertaAdapter.VH> {
 
+    public interface OnClick {
+        void onClick(AlertaResponse alerta);
+    }
+
     private final List<AlertaResponse> items = new ArrayList<>();
+    private OnClick onClick;
+
+    public void setOnClick(OnClick listener) {
+        this.onClick = listener;
+    }
 
     public void submit(List<AlertaResponse> newItems) {
         items.clear();
@@ -49,6 +58,11 @@ public class AlertaAdapter extends RecyclerView.Adapter<AlertaAdapter.VH> {
         }
         holder.b.alertaMeta.setText(meta.toString());
         holder.b.alertaSeverity.setBackgroundColor(severityColor(a.prioridade));
+        holder.b.getRoot().setOnClickListener(v -> {
+            if (onClick != null) {
+                onClick.onClick(a);
+            }
+        });
     }
 
     private int severityColor(String prioridade) {
@@ -56,11 +70,13 @@ public class AlertaAdapter extends RecyclerView.Adapter<AlertaAdapter.VH> {
             return Color.parseColor("#94A3B8");
         }
         switch (prioridade.toUpperCase()) {
+            case "ALTO":
             case "ALTA":
             case "CRITICA":
             case "CRITICAL":
             case "HIGH":
                 return Color.parseColor("#E11D48");
+            case "MEDIO":
             case "MEDIA":
             case "MEDIUM":
                 return Color.parseColor("#D97706");

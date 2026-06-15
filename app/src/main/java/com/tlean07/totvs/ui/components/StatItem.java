@@ -6,6 +6,7 @@ import androidx.annotation.ColorRes;
 public class StatItem {
     public static final String ACTION_RISCOS = "riscos";
     public static final String ACTION_OPORTUNIDADES = "oportunidades";
+    public static final String ACTION_ALERTAS = "alertas";
 
     public final String label;
     public final String value;

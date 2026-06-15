@@ -55,6 +55,11 @@
             android:name=".ui.insights.OportunidadesActivity"
             android:exported="false"
             android:theme="@style/Theme.TotvsMobile.NoActionBar" />
+
+        <activity
+            android:name=".ui.alertas.AlertasActivity"
+            android:exported="false"
+            android:theme="@style/Theme.TotvsMobile.NoActionBar" />
     </application>
 
 </manifest>
