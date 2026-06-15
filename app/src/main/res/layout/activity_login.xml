@@ -81,10 +81,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="18dp"
-                app:cardBackgroundColor="@color/surface_light"
+                app:cardBackgroundColor="@color/login_card"
                 app:cardCornerRadius="20dp"
                 app:cardElevation="5dp"
-                app:strokeColor="@color/border_light"
+                app:strokeColor="@color/login_card_stroke"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
@@ -93,34 +93,9 @@
                     android:orientation="vertical"
                     android:padding="22dp">
 
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_pill_accent"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingHorizontal="11dp"
-                        android:paddingVertical="6dp">
-
-                        <View
-                            android:layout_width="8dp"
-                            android:layout_height="8dp"
-                            android:background="@drawable/dot_accent" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="7dp"
-                            android:text="@string/login_secure_env"
-                            android:textColor="@color/totvs_accent"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
                         android:text="@string/login_title"
                         android:textColor="@color/text_primary_light"
                         android:textSize="22sp"
@@ -209,13 +184,13 @@
                         android:minHeight="52dp"
                         android:text="@string/login_biometric"
                         android:textAllCaps="false"
-                        android:textColor="@color/totvs_primary"
+                        android:textColor="@color/action_fg"
                         android:visibility="gone"
                         app:cornerRadius="12dp"
                         app:icon="@drawable/ic_fingerprint"
                         app:iconGravity="textStart"
-                        app:iconTint="@color/totvs_primary"
-                        app:strokeColor="@color/border_light" />
+                        app:iconTint="@color/action_fg"
+                        app:strokeColor="@color/action_stroke" />
 
                     <View
                         android:layout_width="match_parent"

@@ -10,6 +10,7 @@ import com.tlean07.totvs.network.DataRepository;
 import com.tlean07.totvs.network.PersistentCookieJar;
 import com.tlean07.totvs.storage.SecureStorage;
 import com.tlean07.totvs.storage.SessionManager;
+import com.tlean07.totvs.util.CrashReporter;
 
 /**
  * Composition root / service locator. A single place that wires the encrypted
@@ -33,6 +34,9 @@ public class TotvsApp extends Application {
         super.onCreate();
         instance = this;
 
+        // Capture the stack trace of any crash to a readable file on the device.
+        CrashReporter.install(this);
+
         secureStorage = new SecureStorage(this);
         PersistentCookieJar cookieJar = new PersistentCookieJar(secureStorage);
         sessionManager = new SessionManager(secureStorage, cookieJar);
@@ -46,7 +50,14 @@ public class TotvsApp extends Application {
 
         authRepository = new AuthRepository(apiClient.api(), sessionManager, deviceManager);
         dataRepository = new DataRepository(apiClient.api());
-        passkeyManager = new PasskeyManager(this);
+
+        // Credential Manager isn't present on every OEM image — never let its
+        // initialisation take down the whole app at startup.
+        try {
+            passkeyManager = new PasskeyManager(this);
+        } catch (Throwable t) {
+            passkeyManager = null;
+        }
     }
 
     public static TotvsApp get() {

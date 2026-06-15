@@ -41,7 +41,7 @@
         <item name="android:textSize">15sp</item>
         <item name="android:letterSpacing">0.01</item>
         <item name="cornerRadius">12dp</item>
-        <item name="backgroundTint">@color/totvs_primary</item>
+        <item name="backgroundTint">@color/button_primary</item>
     </style>
 
     <style name="Widget.Totvs.Card" parent="Widget.MaterialComponents.CardView">
@@ -72,6 +72,6 @@
         <item name="android:textColorHint">@color/text_muted_light</item>
         <item name="startIconTint">@color/totvs_secondary</item>
         <item name="endIconTint">@color/text_muted_light</item>
-        <item name="boxBackgroundColor">@color/surface_light</item>
+        <item name="boxBackgroundColor">@color/input_bg_light</item>
     </style>
 </resources>

@@ -10,6 +10,9 @@ import android.util.TypedValue;
 import android.view.View;
 
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
+
+import com.tlean07.totvs.R;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,12 +37,12 @@ public class DonutChartView extends View {
         arcPaint.setStrokeCap(Paint.Cap.BUTT);
         trackPaint.setStyle(Paint.Style.STROKE);
         trackPaint.setStrokeWidth(stroke);
-        trackPaint.setColor(Color.parseColor("#EEF2F7"));
-        valuePaint.setColor(Color.parseColor("#10294A"));
+        trackPaint.setColor(ContextCompat.getColor(context, R.color.chart_track));
+        valuePaint.setColor(ContextCompat.getColor(context, R.color.chart_value));
         valuePaint.setTextAlign(Paint.Align.CENTER);
         valuePaint.setFakeBoldText(true);
         valuePaint.setTextSize(sp(26));
-        labelPaint.setColor(Color.parseColor("#94A3B8"));
+        labelPaint.setColor(ContextCompat.getColor(context, R.color.chart_label));
         labelPaint.setTextAlign(Paint.Align.CENTER);
         labelPaint.setTextSize(sp(12));
     }

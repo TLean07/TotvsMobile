@@ -28,6 +28,28 @@
     <color name="border_light">#E2E8F0</color>
     <color name="input_bg_light">#F8FAFC</color>
 
+    <!-- Component tokens that adapt between light/dark (see values-night/colors.xml) -->
+    <color name="button_primary">#1A365D</color>
+    <color name="chart_track">#EEF2F7</color>
+    <color name="chart_value">#10294A</color>
+    <color name="chart_label">#475569</color>
+
+    <!-- Login card -->
+    <color name="login_card">#FFFFFF</color>
+    <color name="login_card_stroke">#E2E8F0</color>
+
+    <!-- Outlined "secondary" action button (white in dark, navy in light) -->
+    <color name="action_fg">#1A365D</color>
+    <color name="action_stroke">#D7E0EC</color>
+
+    <!-- Adaptive chips (user role / status) -->
+    <color name="chip_role_bg">#EAF1FB</color>
+    <color name="chip_role_fg">#2566A8</color>
+    <color name="chip_success_bg">#ECFDF5</color>
+    <color name="chip_success_fg">#047857</color>
+    <color name="chip_muted_bg">#EEF2F7</color>
+    <color name="chip_muted_fg">#64748B</color>
+
     <!-- Surfaces / text (dark) -->
     <color name="background_dark">#0B1220</color>
     <color name="surface_dark">#111B2E</color>

@@ -10,6 +10,9 @@ import android.util.TypedValue;
 import android.view.View;
 
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
+
+import com.tlean07.totvs.R;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,10 +37,10 @@ public class BarChartView extends View {
         rowHeight = dp(44);
         barHeight = dp(12);
         labelHeight = dp(18);
-        trackPaint.setColor(Color.parseColor("#EEF2F7"));
-        labelPaint.setColor(Color.parseColor("#475569"));
+        trackPaint.setColor(ContextCompat.getColor(context, R.color.chart_track));
+        labelPaint.setColor(ContextCompat.getColor(context, R.color.chart_label));
         labelPaint.setTextSize(sp(13));
-        valuePaint.setColor(Color.parseColor("#10294A"));
+        valuePaint.setColor(ContextCompat.getColor(context, R.color.chart_value));
         valuePaint.setTextSize(sp(13));
         valuePaint.setFakeBoldText(true);
         valuePaint.setTextAlign(Paint.Align.RIGHT);

@@ -8,6 +8,8 @@ import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
+import com.tlean07.totvs.util.Logger;
+
 /**
  * Java port of the LifeCode {@code BiometricHelper.kt} reference, adapted for
  * TOTVS Mobile.
@@ -46,15 +48,26 @@ public final class BiometricHelper {
 
     /** True when the device can authenticate the user with biometrics or device credential. */
     public static boolean isAvailable(Context context) {
-        int status = BiometricManager.from(context).canAuthenticate(BIOMETRIC_ONLY);
-        return status == BiometricManager.BIOMETRIC_SUCCESS;
+        try {
+            int status = BiometricManager.from(context).canAuthenticate(BIOMETRIC_ONLY);
+            return status == BiometricManager.BIOMETRIC_SUCCESS;
+        } catch (Exception e) {
+            // Some OEMs (notably certain Samsung builds) throw here instead of
+            // returning a status code. Treat any failure as "not available".
+            Logger.e("BiometricHelper", "canAuthenticate failed", e);
+            return false;
+        }
     }
 
     /** True when a device PIN/pattern/password fallback is usable. */
     public static boolean canUseDeviceCredential(Context context) {
-        int status = BiometricManager.from(context)
-                .canAuthenticate(BiometricManager.Authenticators.DEVICE_CREDENTIAL);
-        return status == BiometricManager.BIOMETRIC_SUCCESS;
+        try {
+            int status = BiometricManager.from(context)
+                    .canAuthenticate(BiometricManager.Authenticators.DEVICE_CREDENTIAL);
+            return status == BiometricManager.BIOMETRIC_SUCCESS;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public static void prompt(@NonNull FragmentActivity activity,
@@ -62,6 +75,11 @@ public final class BiometricHelper {
                               @NonNull String subtitle,
                               @NonNull String negativeButton,
                               @NonNull PromptCallback callback) {
+
+        if (activity.isFinishing() || activity.isDestroyed()) {
+            callback.onCancel();
+            return;
+        }
 
         BiometricPrompt biometricPrompt = new BiometricPrompt(
                 activity,
@@ -92,14 +110,21 @@ public final class BiometricHelper {
                     }
                 });
 
-        BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
-                .setTitle(title)
-                .setSubtitle(subtitle)
-                .setNegativeButtonText(negativeButton)
-                .setAllowedAuthenticators(BIOMETRIC_ONLY)
-                .setConfirmationRequired(false)
-                .build();
+        try {
+            BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
+                    .setTitle(title)
+                    .setSubtitle(subtitle)
+                    .setNegativeButtonText(negativeButton)
+                    .setAllowedAuthenticators(BIOMETRIC_ONLY)
+                    .setConfirmationRequired(false)
+                    .build();
 
-        biometricPrompt.authenticate(promptInfo);
+            biometricPrompt.authenticate(promptInfo);
+        } catch (Exception e) {
+            // Never let a biometric initialisation problem crash the app — fall
+            // back to password login instead.
+            Logger.e("BiometricHelper", "authenticate failed", e);
+            callback.onError("Não foi possível iniciar a biometria. Use sua senha.");
+        }
     }
 }

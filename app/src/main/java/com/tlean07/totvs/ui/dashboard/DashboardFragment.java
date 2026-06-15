@@ -104,6 +104,11 @@ public class DashboardFragment extends Fragment {
         binding.swipeRefresh.setRefreshing(true);
         hideState();
         data.dashboard(result -> {
+            // The view may have been destroyed while the request was in flight
+            // (tab switch, lock/unlock) — drop the result if so.
+            if (binding == null) {
+                return;
+            }
             binding.swipeRefresh.setRefreshing(false);
             if (result.success && result.data != null) {
                 render(result.data);

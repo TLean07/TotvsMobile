@@ -133,11 +133,12 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
                 android:text="Gerenciar usuários"
-                android:textColor="@color/totvs_primary"
+                android:textColor="@color/action_fg"
                 android:visibility="gone"
                 app:icon="@drawable/ic_person"
                 app:iconGravity="textStart"
-                app:iconTint="@color/totvs_primary"
+                app:iconTint="@color/action_fg"
+                app:strokeColor="@color/action_stroke"
                 tools:ignore="HardcodedText" />
 
             <com.google.android.material.button.MaterialButton

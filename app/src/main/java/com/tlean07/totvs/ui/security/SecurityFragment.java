@@ -77,11 +77,16 @@ public class SecurityFragment extends Fragment {
 
                         @Override
                         public void onCancel() {
-                            binding.switchBiometric.setChecked(false);
+                            if (binding != null) {
+                                binding.switchBiometric.setChecked(false);
+                            }
                         }
 
                         @Override
                         public void onError(String message) {
+                            if (!isAdded() || binding == null) {
+                                return;
+                            }
                             binding.switchBiometric.setChecked(false);
                             Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
                         }
@@ -112,6 +117,9 @@ public class SecurityFragment extends Fragment {
         deviceManager.revokeLocal();
         // Server-side: logout revokes the refresh-token session in MongoDB.
         TotvsApp.get().authRepository().logout(result -> {
+            if (!isAdded()) {
+                return;
+            }
             Intent intent = new Intent(requireContext(), LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);

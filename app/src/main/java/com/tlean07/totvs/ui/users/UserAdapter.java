@@ -1,12 +1,13 @@
 package com.tlean07.totvs.ui.users;
 
-import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.tlean07.totvs.R;
 import com.tlean07.totvs.databinding.ItemUserBinding;
 import com.tlean07.totvs.network.dto.UserDto;
 
@@ -49,31 +50,30 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.VH> {
     public void onBindViewHolder(@NonNull VH holder, int position) {
         UserDto u = items.get(position);
         ItemUserBinding b = holder.b;
+        android.content.Context ctx = b.getRoot().getContext();
 
         b.userName.setText(u.name != null ? u.name : "—");
         b.userEmail.setText(u.email != null ? u.email : "");
         b.userInitial.setText(initial(u));
         b.userRole.setText(u.isAdmin() ? "Administrador" : "Usuário");
 
+        // Status chip uses adaptive (DayNight) pill backgrounds + text colors.
         if (u.active) {
             b.userStatus.setText("Ativo");
-            b.userStatus.setTextColor(Color.parseColor("#047857"));
-            b.userStatus.setBackgroundColor(Color.parseColor("#ECFDF5"));
+            b.userStatus.setBackgroundResource(R.drawable.bg_pill_success);
+            b.userStatus.setTextColor(ContextCompat.getColor(ctx, R.color.chip_success_fg));
         } else {
             b.userStatus.setText("Inativo");
-            b.userStatus.setTextColor(Color.parseColor("#64748B"));
-            b.userStatus.setBackgroundColor(Color.parseColor("#F1F5F9"));
+            b.userStatus.setBackgroundResource(R.drawable.bg_pill_muted);
+            b.userStatus.setTextColor(ContextCompat.getColor(ctx, R.color.chip_muted_fg));
         }
 
         boolean isSelf = u.id != null && u.id.equals(currentUserId);
         b.userToggle.setText(u.active ? (isSelf ? "Você" : "Desativar") : "Ativar");
         b.userToggle.setEnabled(!isSelf);
-        b.userToggle.setStrokeColorResource(u.active
-                ? com.tlean07.totvs.R.color.totvs_danger
-                : com.tlean07.totvs.R.color.totvs_accent);
-        b.userToggle.setTextColor(u.active
-                ? Color.parseColor("#E11D48")
-                : Color.parseColor("#047857"));
+        b.userToggle.setStrokeColorResource(u.active ? R.color.totvs_danger : R.color.totvs_accent);
+        b.userToggle.setTextColor(ContextCompat.getColor(ctx,
+                u.active ? R.color.totvs_danger : R.color.totvs_accent));
         b.userToggle.setOnClickListener(v -> {
             if (!isSelf && onToggle != null) {
                 onToggle.onToggle(u);
