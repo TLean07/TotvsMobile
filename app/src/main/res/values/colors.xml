@@ -1,10 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
+    <!-- TOTVS brand palette (mirrors the web app design tokens) -->
+    <color name="totvs_primary">#1A365D</color>
+    <color name="totvs_primary_dark">#10294A</color>
+    <color name="totvs_primary_variant">#244D7C</color>
+    <color name="totvs_secondary">#2B6CB0</color>
+    <color name="totvs_accent">#38A169</color>
+    <color name="totvs_gradient_start">#173A64</color>
+    <color name="totvs_gradient_end">#2868A8</color>
+
+    <color name="totvs_danger">#E11D48</color>
+    <color name="totvs_danger_bg">#FFF1F2</color>
+    <color name="totvs_warning">#D97706</color>
+    <color name="totvs_success_bg">#ECFDF5</color>
+
+    <!-- Surfaces / text (light) -->
+    <color name="background_light">#F8FAFC</color>
+    <color name="login_background">#EEF3F8</color>
+    <color name="surface_light">#FFFFFF</color>
+    <color name="surface_muted_light">#F1F5F9</color>
+    <color name="on_background_light">#0F172A</color>
+    <color name="text_primary_light">#10294A</color>
+    <color name="text_secondary_light">#475569</color>
+    <color name="text_muted_light">#94A3B8</color>
+    <color name="border_light">#E2E8F0</color>
+    <color name="input_bg_light">#F8FAFC</color>
+
+    <!-- Surfaces / text (dark) -->
+    <color name="background_dark">#0B1220</color>
+    <color name="surface_dark">#111B2E</color>
+    <color name="surface_muted_dark">#1B2942</color>
+    <color name="on_background_dark">#E2E8F0</color>
+    <color name="text_primary_dark">#F1F5F9</color>
+    <color name="text_secondary_dark">#94A3B8</color>
+    <color name="border_dark">#243353</color>
+
     <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
 </resources>

@@ -4,11 +4,7 @@ plugins {
 
 android {
     namespace 'com.tlean07.totvs'
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.tlean07.totvs"
@@ -18,20 +14,29 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        // Production backend (Render). The web app and this app share it.
+        buildConfigField "String", "API_BASE_URL", "\"https://challenge-totvs-backend.onrender.com/api/\""
     }
 
     buildTypes {
+        debug {
+            // Point at a local backend during development. Override host with
+            // 10.0.2.2 for the emulator loopback to your machine.
+            buildConfigField "String", "API_BASE_URL", "\"http://10.0.2.2:8080/api/\""
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     buildFeatures {
         viewBinding true
+        buildConfig true
     }
 }
 
@@ -40,10 +45,23 @@ dependencies {
     implementation libs.material
     implementation libs.recyclerview
     implementation libs.constraintlayout
+    implementation libs.swiperefreshlayout
+    implementation libs.core.splashscreen
     implementation libs.lifecycle.livedata.ktx
     implementation libs.lifecycle.viewmodel.ktx
-    implementation libs.navigation.fragment
-    implementation libs.navigation.ui
+
+    // Networking
+    implementation libs.retrofit
+    implementation libs.retrofit.gson
+    implementation libs.okhttp
+    implementation libs.okhttp.logging
+
+    // Secure storage + biometrics + passkeys
+    implementation libs.security.crypto
+    implementation libs.biometric
+    implementation libs.credentials
+    implementation libs.credentials.play.services
+
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core
