@@ -21,6 +21,7 @@
             android:paddingBottom="18dp">
 
             <TextView
+                android:id="@+id/aiSubtitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/nav_ai"
@@ -89,6 +90,15 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
+        android:indeterminateTint="@color/totvs_secondary"
+        android:visibility="gone" />
+
+    <ProgressBar
+        android:id="@+id/aiLoadMore"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="24dp"
         android:indeterminateTint="@color/totvs_secondary"
         android:visibility="gone" />
 

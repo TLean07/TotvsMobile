@@ -3,8 +3,10 @@
     <string name="app_tagline">Conversational Intelligence</string>
 
     <!-- Login -->
-    <string name="login_title">Entrar na plataforma</string>
-    <string name="login_subtitle">Use suas credenciais para acessar o painel de inteligência conversacional.</string>
+    <string name="login_hero_title">Bem-vindo de volta</string>
+    <string name="login_hero_subtitle">Acompanhe reuniões, riscos e oportunidades em um só lugar.</string>
+    <string name="login_title">Acesse sua conta</string>
+    <string name="login_subtitle">Use suas credenciais corporativas para continuar.</string>
     <string name="login_email">E-mail</string>
     <string name="login_email_hint">seu.email@empresa.com</string>
     <string name="login_password">Senha</string>
@@ -13,6 +15,10 @@
     <string name="login_loading">Entrando…</string>
     <string name="login_biometric">Entrar com biometria</string>
     <string name="login_secure_env">Ambiente seguro</string>
+    <string name="login_security_note">Seus dados são protegidos e criptografados</string>
+    <string name="login_footer">TOTVS • Conversational Intelligence</string>
+    <string name="login_error_invalid_email">Informe um e-mail válido.</string>
+    <string name="login_error_short_password">A senha deve ter pelo menos 8 caracteres.</string>
 
     <!-- Navigation -->
     <string name="nav_dashboard">Painel</string>

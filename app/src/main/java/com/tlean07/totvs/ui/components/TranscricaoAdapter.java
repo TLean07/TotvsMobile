@@ -34,6 +34,23 @@ public class TranscricaoAdapter extends RecyclerView.Adapter<TranscricaoAdapter.
         notifyDataSetChanged();
     }
 
+    public void clear() {
+        int count = items.size();
+        items.clear();
+        if (count > 0) {
+            notifyItemRangeRemoved(0, count);
+        }
+    }
+
+    public void append(List<TranscricaoResponse> newItems) {
+        if (newItems == null || newItems.isEmpty()) {
+            return;
+        }
+        int start = items.size();
+        items.addAll(newItems);
+        notifyItemRangeInserted(start, newItems.size());
+    }
+
     @NonNull
     @Override
     public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {

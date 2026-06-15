@@ -12,12 +12,14 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.tlean07.totvs.R;
 import com.tlean07.totvs.TotvsApp;
 import com.tlean07.totvs.databinding.DialogCreateTranscricaoBinding;
 import com.tlean07.totvs.databinding.FragmentAiBinding;
 import com.tlean07.totvs.network.DataRepository;
+import com.tlean07.totvs.network.dto.PageResponse;
 import com.tlean07.totvs.network.dto.TranscricaoRequest;
 import com.tlean07.totvs.network.dto.TranscricaoResponse;
 import com.tlean07.totvs.ui.components.TranscricaoAdapter;
@@ -27,9 +29,14 @@ import java.util.List;
 
 public class AiFragment extends Fragment {
 
+    private static final int PAGE_SIZE = 20;
+
     private FragmentAiBinding binding;
     private DataRepository data;
     private TranscricaoAdapter adapter;
+    private int nextPage;
+    private boolean loadingPage;
+    private boolean lastPage;
 
     @Nullable
     @Override
@@ -45,28 +52,72 @@ public class AiFragment extends Fragment {
         data = TotvsApp.get().dataRepository();
 
         adapter = new TranscricaoAdapter(this::showDetail);
-        binding.aiRecycler.setLayoutManager(new LinearLayoutManager(requireContext()));
+        LinearLayoutManager layoutManager = new LinearLayoutManager(requireContext());
+        binding.aiRecycler.setLayoutManager(layoutManager);
         binding.aiRecycler.setAdapter(adapter);
+        binding.aiRecycler.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                if (dy <= 0 || loadingPage || lastPage) {
+                    return;
+                }
+                int visible = layoutManager.getChildCount();
+                int total = layoutManager.getItemCount();
+                int first = layoutManager.findFirstVisibleItemPosition();
+                if (visible + first >= total - 4) {
+                    loadPage(false);
+                }
+            }
+        });
 
-        binding.aiSwipe.setOnRefreshListener(this::load);
-        binding.aiRetry.setOnClickListener(v -> load());
+        binding.aiSwipe.setOnRefreshListener(this::loadFirstPage);
+        binding.aiRetry.setOnClickListener(v -> loadFirstPage());
         binding.aiFab.setOnClickListener(v -> showCreateDialog());
-        load();
+        loadFirstPage();
     }
 
-    private void load() {
-        hideState();
-        binding.aiSwipe.setRefreshing(true);
-        data.transcricoes(result -> {
+    private void loadFirstPage() {
+        if (loadingPage) {
             binding.aiSwipe.setRefreshing(false);
-            if (result.success) {
-                List<TranscricaoResponse> list = result.data;
-                adapter.submit(list);
-                if (list == null || list.isEmpty()) {
+            return;
+        }
+        nextPage = 0;
+        lastPage = false;
+        adapter.clear();
+        loadPage(true);
+    }
+
+    private void loadPage(boolean firstPage) {
+        if (loadingPage || lastPage) {
+            return;
+        }
+        loadingPage = true;
+        hideState();
+        binding.aiSwipe.setRefreshing(firstPage);
+        binding.aiLoadMore.setVisibility(firstPage ? View.GONE : View.VISIBLE);
+
+        data.transcricoesPaginadas(nextPage, PAGE_SIZE, result -> {
+            if (binding == null) {
+                return;
+            }
+            loadingPage = false;
+            binding.aiSwipe.setRefreshing(false);
+            binding.aiLoadMore.setVisibility(View.GONE);
+
+            if (result.success && result.data != null) {
+                PageResponse<TranscricaoResponse> page = result.data;
+                List<TranscricaoResponse> items = page.content;
+                adapter.append(items);
+                nextPage = page.page + 1;
+                lastPage = page.last;
+                binding.aiSubtitle.setText(page.totalElements + " análises disponíveis");
+                if (page.totalElements == 0) {
                     showState("Nenhuma análise ainda.\nToque em + para enviar uma transcrição.", false);
                 }
-            } else {
+            } else if (firstPage) {
                 showState(result.errorMessage, true);
+            } else {
+                Toast.makeText(requireContext(), result.errorMessage, Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -78,7 +129,7 @@ public class AiFragment extends Fragment {
         String title = t.cliente != null && !t.cliente.isBlank() ? t.cliente : "Análise";
         new AlertDialog.Builder(requireContext())
                 .setTitle(title)
-                .setMessage("Status: " + (t.status != null ? t.status : "—") + "\n\n" + resumo)
+                .setMessage("Status: " + (t.status != null ? t.status : "-") + "\n\n" + resumo)
                 .setPositiveButton("Fechar", null)
                 .show();
     }
@@ -108,10 +159,13 @@ public class AiFragment extends Fragment {
     private void submit(TranscricaoRequest request) {
         binding.aiProgress.setVisibility(View.VISIBLE);
         data.criarTranscricao(request, result -> {
+            if (binding == null) {
+                return;
+            }
             binding.aiProgress.setVisibility(View.GONE);
             if (result.success) {
                 Toast.makeText(requireContext(), "Análise enviada", Toast.LENGTH_SHORT).show();
-                load();
+                loadFirstPage();
             } else {
                 Toast.makeText(requireContext(), result.errorMessage, Toast.LENGTH_LONG).show();
             }

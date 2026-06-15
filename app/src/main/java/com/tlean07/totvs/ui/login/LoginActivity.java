@@ -82,11 +82,11 @@ public class LoginActivity extends AppCompatActivity {
         String password = binding.inputPassword.getText().toString();
 
         if (TextUtils.isEmpty(email) || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            showError("Informe um e-mail válido.");
+            showError(getString(R.string.login_error_invalid_email));
             return;
         }
         if (password.length() < 8) {
-            showError("A senha deve ter pelo menos 8 caracteres.");
+            showError(getString(R.string.login_error_short_password));
             return;
         }
 

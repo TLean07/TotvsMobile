@@ -11,6 +11,8 @@
 
     <color name="totvs_danger">#E11D48</color>
     <color name="totvs_danger_bg">#FFF1F2</color>
+    <color name="totvs_opportunity">#7C3AED</color>
+    <color name="totvs_opportunity_bg">#F5F3FF</color>
     <color name="totvs_warning">#D97706</color>
     <color name="totvs_success_bg">#ECFDF5</color>
 

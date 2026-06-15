@@ -15,7 +15,16 @@ import java.util.List;
 /** Grid of metric cards on the dashboard. */
 public class StatAdapter extends RecyclerView.Adapter<StatAdapter.VH> {
 
+    public interface OnClick {
+        void onClick(StatItem item);
+    }
+
     private final List<StatItem> items = new ArrayList<>();
+    private final OnClick onClick;
+
+    public StatAdapter(OnClick onClick) {
+        this.onClick = onClick;
+    }
 
     public void submit(List<StatItem> newItems) {
         items.clear();
@@ -38,6 +47,11 @@ public class StatAdapter extends RecyclerView.Adapter<StatAdapter.VH> {
         holder.b.statLabel.setText(item.label);
         holder.b.statAccent.setBackgroundColor(
                 ContextCompat.getColor(holder.b.getRoot().getContext(), item.accentColor));
+        holder.b.getRoot().setClickable(item.action != null);
+        holder.b.getRoot().setFocusable(item.action != null);
+        holder.b.getRoot().setOnClickListener(item.action == null || onClick == null
+                ? null
+                : v -> onClick.onClick(item));
     }
 
     @Override

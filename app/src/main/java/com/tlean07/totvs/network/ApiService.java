@@ -5,7 +5,9 @@ import com.tlean07.totvs.network.dto.AuthResponse;
 import com.tlean07.totvs.network.dto.CreateUserRequest;
 import com.tlean07.totvs.network.dto.DashboardResponse;
 import com.tlean07.totvs.network.dto.LoginRequest;
+import com.tlean07.totvs.network.dto.PageResponse;
 import com.tlean07.totvs.network.dto.TranscricaoRequest;
+import com.tlean07.totvs.network.dto.TranscricaoInsightsResponse;
 import com.tlean07.totvs.network.dto.TranscricaoResponse;
 import com.tlean07.totvs.network.dto.UserDto;
 
@@ -17,6 +19,7 @@ import retrofit2.http.GET;
 import retrofit2.http.PATCH;
 import retrofit2.http.POST;
 import retrofit2.http.Path;
+import retrofit2.http.Query;
 
 /** Retrofit description of the shared backend (same endpoints the web app uses). */
 public interface ApiService {
@@ -35,6 +38,14 @@ public interface ApiService {
 
     @GET("transcricoes")
     Call<List<TranscricaoResponse>> transcricoes();
+
+    @GET("transcricoes/paged")
+    Call<PageResponse<TranscricaoResponse>> transcricoesPaginadas(
+            @Query("page") int page,
+            @Query("size") int size);
+
+    @GET("transcricoes/insights")
+    Call<List<TranscricaoInsightsResponse>> insights();
 
     @GET("transcricoes/{id}")
     Call<TranscricaoResponse> transcricao(@Path("id") String id);
