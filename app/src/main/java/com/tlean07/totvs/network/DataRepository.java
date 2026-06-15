@@ -1,9 +1,11 @@
 package com.tlean07.totvs.network;
 
 import com.tlean07.totvs.network.dto.AlertaResponse;
+import com.tlean07.totvs.network.dto.CreateUserRequest;
 import com.tlean07.totvs.network.dto.DashboardResponse;
 import com.tlean07.totvs.network.dto.TranscricaoRequest;
 import com.tlean07.totvs.network.dto.TranscricaoResponse;
+import com.tlean07.totvs.network.dto.UserDto;
 import com.tlean07.totvs.util.Callback;
 
 import java.util.List;
@@ -39,5 +41,19 @@ public class DataRepository {
 
     public void marcarAlertaVisto(String id, Callback<AlertaResponse> cb) {
         Calls.execute(api.marcarAlertaVisto(id), cb);
+    }
+
+    // --- Administração de usuários ---
+
+    public void users(Callback<List<UserDto>> cb) {
+        Calls.execute(api.users(), cb);
+    }
+
+    public void criarUsuario(CreateUserRequest request, Callback<UserDto> cb) {
+        Calls.execute(api.criarUsuario(request), cb);
+    }
+
+    public void setUsuarioAtivo(String id, boolean active, Callback<UserDto> cb) {
+        Calls.execute(active ? api.ativarUsuario(id) : api.desativarUsuario(id), cb);
     }
 }

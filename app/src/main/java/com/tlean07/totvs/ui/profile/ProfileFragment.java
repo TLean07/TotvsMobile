@@ -17,6 +17,7 @@ import com.tlean07.totvs.cas.DeviceInfo;
 import com.tlean07.totvs.databinding.FragmentProfileBinding;
 import com.tlean07.totvs.network.dto.AuthUser;
 import com.tlean07.totvs.ui.login.LoginActivity;
+import com.tlean07.totvs.ui.users.UsersActivity;
 import com.tlean07.totvs.util.SafeAreaHelper;
 
 public class ProfileFragment extends Fragment {
@@ -46,6 +47,12 @@ public class ProfileFragment extends Fragment {
         DeviceInfo device = TotvsApp.get().devices().getDevice();
         binding.profileDeviceName.setText(device.deviceName != null ? device.deviceName : "Este dispositivo");
         binding.profileDeviceMeta.setText(device.osVersion + " • app " + device.appVersion);
+
+        // Área de administração só aparece para ADMIN (igual à versão web).
+        boolean isAdmin = user != null && user.isAdmin();
+        binding.buttonManageUsers.setVisibility(isAdmin ? View.VISIBLE : View.GONE);
+        binding.buttonManageUsers.setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), UsersActivity.class)));
 
         binding.buttonLogout.setOnClickListener(v -> confirmLogout());
     }

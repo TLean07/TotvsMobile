@@ -1,5 +1,6 @@
 package com.tlean07.totvs.ui.dashboard;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,15 +16,21 @@ import com.tlean07.totvs.R;
 import com.tlean07.totvs.TotvsApp;
 import com.tlean07.totvs.databinding.FragmentDashboardBinding;
 import com.tlean07.totvs.network.DataRepository;
+import com.tlean07.totvs.databinding.ItemLegendBinding;
 import com.tlean07.totvs.network.dto.AuthUser;
 import com.tlean07.totvs.network.dto.DashboardResponse;
 import com.tlean07.totvs.ui.components.AlertaAdapter;
+import com.tlean07.totvs.ui.components.BarChartView;
+import com.tlean07.totvs.ui.components.ChartEntry;
+import com.tlean07.totvs.ui.components.DonutChartView;
 import com.tlean07.totvs.ui.components.StatAdapter;
 import com.tlean07.totvs.ui.components.StatItem;
 import com.tlean07.totvs.util.SafeAreaHelper;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DashboardFragment extends Fragment {
 
@@ -31,6 +38,33 @@ public class DashboardFragment extends Fragment {
     private final StatAdapter statAdapter = new StatAdapter();
     private final AlertaAdapter alertaAdapter = new AlertaAdapter();
     private DataRepository data;
+
+    // Mesma identidade visual de cores/rótulos da versão web (dashboard).
+    private static final Map<String, String[]> SENTIMENTO = map(new String[][]{
+            {"POSITIVO", "Positivo", "#10B981"},
+            {"NEGATIVO", "Negativo", "#F43F5E"},
+            {"NEUTRO", "Neutro", "#94A3B8"},
+            {"MISTO", "Misto", "#F59E0B"},
+    });
+    private static final Map<String, String[]> RISCO = map(new String[][]{
+            {"CHURN", "Churn", "#E11D48"},
+            {"CONCORRENCIA", "Concorrência", "#F97316"},
+            {"INSATISFACAO", "Insatisfação", "#EAB308"},
+            {"PERDA_CONFIANCA", "Confiança", "#7C3AED"},
+    });
+    private static final Map<String, String[]> OPORTUNIDADE = map(new String[][]{
+            {"UPSELL", "Upsell", "#7C3AED"},
+            {"CROSS_SELL", "Cross-sell", "#2563EB"},
+            {"NOVO_PRODUTO", "Novo produto", "#059669"},
+    });
+
+    private static Map<String, String[]> map(String[][] defs) {
+        LinkedHashMap<String, String[]> m = new LinkedHashMap<>();
+        for (String[] d : defs) {
+            m.put(d[0], new String[]{d[1], d[2]});
+        }
+        return m;
+    }
 
     @Nullable
     @Override
@@ -83,9 +117,66 @@ public class DashboardFragment extends Fragment {
         stats.add(new StatItem("Churn potencial", String.valueOf(d.churnsPotenciais), R.color.totvs_danger));
         statAdapter.submit(stats);
 
+        renderCharts(d);
+
         boolean hasAlerts = d.alertasRecentes != null && !d.alertasRecentes.isEmpty();
         binding.alertsTitle.setVisibility(hasAlerts ? View.VISIBLE : View.GONE);
         alertaAdapter.submit(d.alertasRecentes);
+    }
+
+    private void renderCharts(DashboardResponse d) {
+        List<ChartEntry> sentimento = buildEntries(d.sentimentoDistribuicao, SENTIMENTO);
+        if (sentimento.isEmpty()) {
+            binding.chartSentimentoCard.setVisibility(View.GONE);
+        } else {
+            binding.chartSentimentoCard.setVisibility(View.VISIBLE);
+            binding.donutSentimento.setData(sentimento);
+            renderLegend(sentimento);
+        }
+
+        bindBar(buildEntries(d.riscoPorTipo, RISCO), binding.chartRiscoCard, binding.barRisco);
+        bindBar(buildEntries(d.oportunidadePorTipo, OPORTUNIDADE), binding.chartOportunidadeCard, binding.barOportunidade);
+    }
+
+    private void bindBar(List<ChartEntry> entries, View card, BarChartView bar) {
+        if (entries.isEmpty()) {
+            card.setVisibility(View.GONE);
+        } else {
+            card.setVisibility(View.VISIBLE);
+            bar.setData(entries);
+        }
+    }
+
+    private List<ChartEntry> buildEntries(Map<String, Long> source, Map<String, String[]> meta) {
+        List<ChartEntry> out = new ArrayList<>();
+        if (source == null) {
+            return out;
+        }
+        // Preserve the canonical order, then append any unexpected keys.
+        for (Map.Entry<String, String[]> m : meta.entrySet()) {
+            Long value = source.get(m.getKey());
+            if (value != null && value > 0) {
+                out.add(new ChartEntry(m.getValue()[0], value, Color.parseColor(m.getValue()[1])));
+            }
+        }
+        for (Map.Entry<String, Long> s : source.entrySet()) {
+            if (!meta.containsKey(s.getKey()) && s.getValue() != null && s.getValue() > 0) {
+                out.add(new ChartEntry(s.getKey(), s.getValue(), Color.parseColor("#64748B")));
+            }
+        }
+        return out;
+    }
+
+    private void renderLegend(List<ChartEntry> entries) {
+        binding.legendSentimento.removeAllViews();
+        for (ChartEntry e : entries) {
+            ItemLegendBinding lb = ItemLegendBinding.inflate(
+                    getLayoutInflater(), binding.legendSentimento, false);
+            lb.legendDot.setBackgroundColor(e.color);
+            lb.legendLabel.setText(e.label);
+            lb.legendValue.setText(String.valueOf(e.value));
+            binding.legendSentimento.addView(lb.getRoot());
+        }
     }
 
     private void showError(String message) {

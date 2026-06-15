@@ -16,6 +16,8 @@ public class DashboardResponse {
     public long partesPositivas;
     public long partesNeutras;
     public Map<String, Long> sentimentoDistribuicao;
+    public Map<String, Long> riscoPorTipo;
+    public Map<String, Long> oportunidadePorTipo;
     public List<AlertaResponse> alertasRecentes;
     public List<TranscricaoResponse> ultimasTranscricoes;
 }

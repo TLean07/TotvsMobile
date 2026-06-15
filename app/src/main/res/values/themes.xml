@@ -15,7 +15,8 @@
         <!-- Edge-to-edge: transparent system bars, insets handled by SafeAreaHelper -->
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">true</item>
+        <!-- Top of every screen is the navy brand gradient → white status icons. -->
+        <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="o_mr1">true</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
 
@@ -27,7 +28,8 @@
     <!-- Splash (androidx core-splashscreen) -->
     <style name="Theme.TotvsMobile.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/totvs_primary</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/totvs_logo</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/totvs_primary</item>
         <item name="postSplashScreenTheme">@style/Theme.TotvsMobile.NoActionBar</item>
     </style>
 
@@ -56,5 +58,20 @@
 
     <style name="Text.Totvs.Caption" parent="TextAppearance.MaterialComponents.Caption">
         <item name="android:textColor">@color/text_secondary_light</item>
+    </style>
+
+    <style name="Widget.Totvs.TextInput" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item name="boxCornerRadiusTopStart">14dp</item>
+        <item name="boxCornerRadiusTopEnd">14dp</item>
+        <item name="boxCornerRadiusBottomStart">14dp</item>
+        <item name="boxCornerRadiusBottomEnd">14dp</item>
+        <item name="boxStrokeColor">@color/totvs_secondary</item>
+        <item name="boxStrokeWidth">1dp</item>
+        <item name="boxStrokeWidthFocused">2dp</item>
+        <item name="hintTextColor">@color/totvs_secondary</item>
+        <item name="android:textColorHint">@color/text_muted_light</item>
+        <item name="startIconTint">@color/totvs_secondary</item>
+        <item name="endIconTint">@color/text_muted_light</item>
+        <item name="boxBackgroundColor">@color/surface_light</item>
     </style>
 </resources>

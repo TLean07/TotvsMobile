@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Android 12+ splash API masks the icon into a circle, which clips a wide
+  horizontal logo. We inset the logo so the whole wordmark fits inside the
+  circular safe zone instead of being cropped.
+-->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/totvs_logo"
+    android:insetLeft="38dp"
+    android:insetRight="38dp"
+    android:insetTop="98dp"
+    android:insetBottom="98dp" />

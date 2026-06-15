@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="24dp"
+        android:paddingTop="8dp">
+
+        <EditText
+            android:id="@+id/newUserName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:autofillHints="name"
+            android:background="@drawable/bg_input"
+            android:hint="Nome completo"
+            android:inputType="textPersonName"
+            android:minHeight="52dp"
+            android:paddingHorizontal="14dp"
+            android:textColor="@color/on_background_light"
+            android:textColorHint="@color/text_muted_light"
+            tools:ignore="HardcodedText" />
+
+        <EditText
+            android:id="@+id/newUserEmail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:autofillHints="emailAddress"
+            android:background="@drawable/bg_input"
+            android:hint="E-mail corporativo"
+            android:inputType="textEmailAddress"
+            android:minHeight="52dp"
+            android:paddingHorizontal="14dp"
+            android:textColor="@color/on_background_light"
+            android:textColorHint="@color/text_muted_light"
+            tools:ignore="HardcodedText" />
+
+        <EditText
+            android:id="@+id/newUserPassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:autofillHints="password"
+            android:background="@drawable/bg_input"
+            android:hint="Senha temporária (mín. 12)"
+            android:inputType="textPassword"
+            android:minHeight="52dp"
+            android:paddingHorizontal="14dp"
+            android:textColor="@color/on_background_light"
+            android:textColorHint="@color/text_muted_light"
+            tools:ignore="HardcodedText" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:layout_marginBottom="6dp"
+            android:text="Perfil de acesso"
+            android:textColor="@color/text_secondary_light"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            tools:ignore="HardcodedText" />
+
+        <Spinner
+            android:id="@+id/newUserRole"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_input"
+            android:minHeight="52dp"
+            android:paddingHorizontal="10dp" />
+    </LinearLayout>
+</ScrollView>

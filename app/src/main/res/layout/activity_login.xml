@@ -1,76 +1,101 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/loginRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/login_background">
-
-    <!-- Gradient brand header (mirrors the web login header) -->
-    <LinearLayout
-        android:id="@+id/loginHeader"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/gradient_header"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="20dp"
-        android:paddingVertical="16dp">
-
-        <ImageView
-            android:layout_width="120dp"
-            android:layout_height="28dp"
-            android:adjustViewBounds="true"
-            android:contentDescription="@string/app_name"
-            android:scaleType="fitStart"
-            android:src="@drawable/totvs_logo" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="12dp"
-            android:letterSpacing="0.04"
-            android:text="@string/app_tagline"
-            android:textAllCaps="true"
-            android:textColor="#E6FFFFFF"
-            android:textSize="11sp" />
-    </LinearLayout>
+    android:background="@drawable/bg_login_gradient">
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:fillViewport="true">
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:scrollbars="none">
 
-        <FrameLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="20dp">
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingHorizontal="22dp">
 
+            <!-- Brand area on the gradient -->
+            <LinearLayout
+                android:id="@+id/loginHeader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingTop="56dp"
+                android:paddingBottom="28dp">
+
+                <ImageView
+                    android:layout_width="190dp"
+                    android:layout_height="wrap_content"
+                    android:adjustViewBounds="true"
+                    android:contentDescription="@string/app_name"
+                    android:src="@drawable/totvs_logo" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:letterSpacing="0.18"
+                    android:text="@string/app_tagline"
+                    android:textAllCaps="true"
+                    android:textColor="#BFD6EC"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- Floating form card -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:maxWidth="@dimen/content_max_width"
-                app:cardCornerRadius="18dp"
-                app:cardElevation="4dp"
-                app:cardBackgroundColor="@color/surface_light">
+                android:layout_marginBottom="28dp"
+                app:cardBackgroundColor="@color/surface_light"
+                app:cardCornerRadius="26dp"
+                app:cardElevation="14dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="24dp">
+                    android:padding="26dp">
+
+                    <!-- Secure environment pill -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_pill_accent"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="6dp">
+
+                        <View
+                            android:layout_width="8dp"
+                            android:layout_height="8dp"
+                            android:background="@drawable/dot_accent" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="@string/login_secure_env"
+                            android:textColor="@color/totvs_accent"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="18dp"
                         android:text="@string/login_title"
                         android:textColor="@color/text_primary_light"
-                        android:textSize="22sp"
+                        android:textSize="24sp"
                         android:textStyle="bold" />
 
                     <TextView
@@ -81,53 +106,46 @@
                         android:textColor="@color/text_secondary_light"
                         android:textSize="13sp" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="22dp"
-                        android:text="@string/login_email"
-                        android:textColor="@color/text_secondary_light"
-                        android:textSize="13sp"
-                        android:textStyle="bold" />
-
-                    <EditText
-                        android:id="@+id/inputEmail"
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/inputEmailLayout"
+                        style="@style/Widget.Totvs.TextInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:autofillHints="emailAddress"
-                        android:background="@drawable/bg_input"
-                        android:hint="@string/login_email_hint"
-                        android:inputType="textEmailAddress"
-                        android:minHeight="52dp"
-                        android:paddingHorizontal="16dp"
-                        android:textColor="@color/on_background_light"
-                        android:textColorHint="@color/text_muted_light"
-                        android:textSize="15sp" />
+                        android:layout_marginTop="24dp"
+                        android:hint="@string/login_email"
+                        app:startIconDrawable="@drawable/ic_email">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="@string/login_password"
-                        android:textColor="@color/text_secondary_light"
-                        android:textSize="13sp"
-                        android:textStyle="bold" />
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/inputEmail"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:autofillHints="emailAddress"
+                            android:inputType="textEmailAddress"
+                            android:maxLines="1"
+                            android:textColor="@color/on_background_light"
+                            android:textSize="15sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
-                    <EditText
-                        android:id="@+id/inputPassword"
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/inputPasswordLayout"
+                        style="@style/Widget.Totvs.TextInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:autofillHints="password"
-                        android:background="@drawable/bg_input"
-                        android:hint="@string/login_password_hint"
-                        android:inputType="textPassword"
-                        android:minHeight="52dp"
-                        android:paddingHorizontal="16dp"
-                        android:textColor="@color/on_background_light"
-                        android:textColorHint="@color/text_muted_light"
-                        android:textSize="15sp" />
+                        android:layout_marginTop="14dp"
+                        android:hint="@string/login_password"
+                        app:endIconMode="password_toggle"
+                        app:startIconDrawable="@drawable/ic_lock">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/inputPassword"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:autofillHints="password"
+                            android:inputType="textPassword"
+                            android:maxLines="1"
+                            android:textColor="@color/on_background_light"
+                            android:textSize="15sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
                     <TextView
                         android:id="@+id/loginError"
@@ -135,18 +153,21 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="14dp"
                         android:background="@color/totvs_danger_bg"
+                        android:drawablePadding="8dp"
                         android:padding="12dp"
                         android:textColor="@color/totvs_danger"
                         android:textSize="13sp"
-                        android:visibility="gone"
-                        tools:ignore="MissingDefaultResource" />
+                        android:visibility="gone" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/buttonLogin"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="22dp"
-                        android:text="@string/login_button" />
+                        android:layout_marginTop="24dp"
+                        android:text="@string/login_button"
+                        app:icon="@drawable/ic_arrow_forward"
+                        app:iconGravity="textEnd"
+                        app:iconTint="@android:color/white" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/buttonBiometric"
@@ -159,10 +180,35 @@
                         app:icon="@drawable/ic_fingerprint"
                         app:iconGravity="textStart"
                         app:iconTint="@color/totvs_primary"
+                        app:strokeColor="@color/border_light"
                         android:visibility="gone" />
 
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_marginTop="22dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="15dp"
+                            android:layout_height="15dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_shield"
+                            app:tint="@color/text_muted_light" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:text="Protegido por criptografia e biometria"
+                            android:textColor="@color/text_muted_light"
+                            android:textSize="12sp"
+                            tools:ignore="HardcodedText" />
+                    </LinearLayout>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
-        </FrameLayout>
+        </LinearLayout>
     </ScrollView>
-</LinearLayout>
+</FrameLayout>

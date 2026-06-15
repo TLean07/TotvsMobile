@@ -2,10 +2,12 @@ package com.tlean07.totvs.network;
 
 import com.tlean07.totvs.network.dto.AlertaResponse;
 import com.tlean07.totvs.network.dto.AuthResponse;
+import com.tlean07.totvs.network.dto.CreateUserRequest;
 import com.tlean07.totvs.network.dto.DashboardResponse;
 import com.tlean07.totvs.network.dto.LoginRequest;
 import com.tlean07.totvs.network.dto.TranscricaoRequest;
 import com.tlean07.totvs.network.dto.TranscricaoResponse;
+import com.tlean07.totvs.network.dto.UserDto;
 
 import java.util.List;
 
@@ -48,4 +50,18 @@ public interface ApiService {
 
     @PATCH("alertas/{id}/visto")
     Call<AlertaResponse> marcarAlertaVisto(@Path("id") String id);
+
+    // --- Administração de usuários (somente ADMIN) ---
+
+    @GET("users")
+    Call<List<UserDto>> users();
+
+    @POST("users")
+    Call<UserDto> criarUsuario(@Body CreateUserRequest body);
+
+    @PATCH("users/{id}/activate")
+    Call<UserDto> ativarUsuario(@Path("id") String id);
+
+    @PATCH("users/{id}/deactivate")
+    Call<UserDto> desativarUsuario(@Path("id") String id);
 }

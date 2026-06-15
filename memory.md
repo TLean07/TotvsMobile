@@ -49,6 +49,17 @@ com.tlean07.totvs
 - `GET /api/dashboard`
 - `GET /api/transcricoes`, `GET /api/transcricoes/{id}`, `POST /api/transcricoes`
 - `GET /api/alertas`, `PATCH /api/alertas/{id}/visto`
+- `GET /api/users`, `POST /api/users`, `PATCH /api/users/{id}/activate|deactivate` (admin)
+
+### Charts & admin (parity with web)
+- Dashboard charts: **DonutChartView** (distribuição de sentimento + legenda) and
+  **BarChartView** (riscos por tipo, oportunidades por tipo) — custom canvas views, no 3rd-party
+  lib. Same colors/labels as the web `app/page.tsx` (POSITIVO/NEGATIVO/…, CHURN/…, UPSELL/…).
+- **UsersActivity** (admin-only, opened from Perfil): lista de usuários, criar usuário
+  (nome/email/senha≥12/role), ativar/desativar, com resumo Total/Ativos/Admins. Espelha a página
+  `usuarios` da web. Botão "Gerenciar usuários" só aparece para `role == ADMIN`.
+- Splash: logo passa por `splash_logo.xml` (inset) para caber no círculo da SplashScreen do
+  Android 12+ (antes o wordmark era recortado).
 
 ### Endpoints NOT created (intentional, additive backend design only)
 Documented for a future, retrocompatible backend PR (would not break web):
