@@ -46,4 +46,8 @@
     <color name="chip_success_fg">#34D399</color>
     <color name="chip_muted_bg">#1B2942</color>
     <color name="chip_muted_fg">#9AA9C0</color>
+    <color name="chip_warning_bg">#2E2410</color>
+    <color name="chip_warning_fg">#FBBF24</color>
+    <color name="chip_danger_bg">#2E1416</color>
+    <color name="chip_danger_fg">#FB7185</color>
 </resources>

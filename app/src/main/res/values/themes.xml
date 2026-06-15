@@ -60,6 +60,16 @@
         <item name="android:textColor">@color/text_secondary_light</item>
     </style>
 
+    <!-- Bottom sheet (transparent window so the rounded-top content shows) -->
+    <style name="Theme.Totvs.BottomSheet" parent="Theme.MaterialComponents.DayNight.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/Totvs.BottomSheet.Modal</item>
+    </style>
+
+    <style name="Totvs.BottomSheet.Modal" parent="Widget.MaterialComponents.BottomSheet.Modal">
+        <item name="backgroundTint">@android:color/transparent</item>
+        <item name="android:elevation">0dp</item>
+    </style>
+
     <style name="Widget.Totvs.TextInput" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
         <item name="boxCornerRadiusTopStart">14dp</item>
         <item name="boxCornerRadiusTopEnd">14dp</item>

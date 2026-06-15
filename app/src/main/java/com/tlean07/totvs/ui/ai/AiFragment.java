@@ -1,12 +1,18 @@
 package com.tlean07.totvs.ui.ai;
 
+import android.content.ContentResolver;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -14,17 +20,21 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.tlean07.totvs.R;
 import com.tlean07.totvs.TotvsApp;
-import com.tlean07.totvs.databinding.DialogCreateTranscricaoBinding;
 import com.tlean07.totvs.databinding.FragmentAiBinding;
+import com.tlean07.totvs.databinding.SheetCreateTranscricaoBinding;
 import com.tlean07.totvs.network.DataRepository;
 import com.tlean07.totvs.network.dto.PageResponse;
 import com.tlean07.totvs.network.dto.TranscricaoRequest;
 import com.tlean07.totvs.network.dto.TranscricaoResponse;
 import com.tlean07.totvs.ui.components.TranscricaoAdapter;
+import com.tlean07.totvs.util.AppExecutors;
 import com.tlean07.totvs.util.SafeAreaHelper;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.util.List;
 
 public class AiFragment extends Fragment {
@@ -37,6 +47,12 @@ public class AiFragment extends Fragment {
     private int nextPage;
     private boolean loadingPage;
     private boolean lastPage;
+
+    private BottomSheetDialog createSheet;
+
+    // File picker for the TOTVS JSON import (same feature as the web app).
+    private final ActivityResultLauncher<String[]> jsonPicker =
+            registerForActivityResult(new ActivityResultContracts.OpenDocument(), this::onJsonPicked);
 
     @Nullable
     @Override
@@ -135,25 +151,106 @@ public class AiFragment extends Fragment {
     }
 
     private void showCreateDialog() {
-        DialogCreateTranscricaoBinding db = DialogCreateTranscricaoBinding.inflate(getLayoutInflater());
-        AlertDialog dialog = new AlertDialog.Builder(requireContext())
-                .setTitle("Nova análise")
-                .setView(db.getRoot())
-                .setPositiveButton("Analisar", null)
-                .setNegativeButton("Cancelar", null)
-                .create();
-        dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            String texto = db.dialogTexto.getText().toString().trim();
+        SheetCreateTranscricaoBinding sb =
+                SheetCreateTranscricaoBinding.inflate(getLayoutInflater());
+        createSheet = new BottomSheetDialog(requireContext(), R.style.Theme_Totvs_BottomSheet);
+        createSheet.setContentView(sb.getRoot());
+
+        sb.sheetImportJson.setOnClickListener(v ->
+                jsonPicker.launch(new String[]{"application/json", "application/octet-stream", "text/plain"}));
+
+        sb.buttonAnalisar.setOnClickListener(v -> {
+            String texto = sb.inputTexto.getText() == null ? "" : sb.inputTexto.getText().toString().trim();
             if (TextUtils.isEmpty(texto)) {
-                db.dialogTexto.setError("Informe a transcrição");
+                sb.inputTexto.setError("Informe a transcrição");
                 return;
             }
-            String cliente = db.dialogCliente.getText().toString().trim();
-            String vendedor = db.dialogVendedor.getText().toString().trim();
-            dialog.dismiss();
+            String cliente = sb.inputCliente.getText() == null ? "" : sb.inputCliente.getText().toString().trim();
+            String vendedor = sb.inputVendedor.getText() == null ? "" : sb.inputVendedor.getText().toString().trim();
+            createSheet.dismiss();
             submit(new TranscricaoRequest(texto, cliente, vendedor, null));
-        }));
-        dialog.show();
+        });
+
+        createSheet.show();
+    }
+
+    private void onJsonPicked(@Nullable Uri uri) {
+        if (uri == null || binding == null) {
+            return;
+        }
+        binding.aiProgress.setVisibility(View.VISIBLE);
+        AppExecutors.io(() -> {
+            try {
+                ContentResolver resolver = requireContext().getContentResolver();
+                String name = queryDisplayName(resolver, uri);
+                byte[] bytes = readAllBytes(resolver, uri);
+                AppExecutors.main(() -> uploadJson(bytes, name));
+            } catch (Exception e) {
+                AppExecutors.main(() -> {
+                    if (binding != null) {
+                        binding.aiProgress.setVisibility(View.GONE);
+                    }
+                    Toast.makeText(requireContext(),
+                            "Não foi possível ler o arquivo.", Toast.LENGTH_LONG).show();
+                });
+            }
+        });
+    }
+
+    private void uploadJson(byte[] bytes, String name) {
+        if (binding == null) {
+            return;
+        }
+        data.importTotvsJson(bytes, name, result -> {
+            if (binding == null) {
+                return;
+            }
+            binding.aiProgress.setVisibility(View.GONE);
+            if (result.success && result.data != null) {
+                int n = result.data.importedCount();
+                Toast.makeText(requireContext(),
+                        "Importação concluída: " + n + (n == 1 ? " análise" : " análises"),
+                        Toast.LENGTH_LONG).show();
+                if (createSheet != null && createSheet.isShowing()) {
+                    createSheet.dismiss();
+                }
+                loadFirstPage();
+            } else {
+                Toast.makeText(requireContext(),
+                        result.errorMessage != null ? result.errorMessage
+                                : "Falha ao importar o JSON.", Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private String queryDisplayName(ContentResolver resolver, Uri uri) {
+        try (Cursor c = resolver.query(uri, new String[]{OpenableColumns.DISPLAY_NAME},
+                null, null, null)) {
+            if (c != null && c.moveToFirst()) {
+                String name = c.getString(0);
+                if (name != null && !name.isBlank()) {
+                    return name;
+                }
+            }
+        } catch (Exception ignored) {
+            // fall through
+        }
+        return "totvs.json";
+    }
+
+    private byte[] readAllBytes(ContentResolver resolver, Uri uri) throws Exception {
+        try (InputStream in = resolver.openInputStream(uri);
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            if (in == null) {
+                throw new IllegalStateException("stream null");
+            }
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = in.read(buffer)) != -1) {
+                out.write(buffer, 0, read);
+            }
+            return out.toByteArray();
+        }
     }
 
     private void submit(TranscricaoRequest request) {

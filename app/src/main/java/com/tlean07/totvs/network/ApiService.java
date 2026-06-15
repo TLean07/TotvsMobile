@@ -7,17 +7,21 @@ import com.tlean07.totvs.network.dto.DashboardResponse;
 import com.tlean07.totvs.network.dto.LoginRequest;
 import com.tlean07.totvs.network.dto.PageResponse;
 import com.tlean07.totvs.network.dto.TranscricaoRequest;
+import com.tlean07.totvs.network.dto.TranscricaoImportResponse;
 import com.tlean07.totvs.network.dto.TranscricaoInsightsResponse;
 import com.tlean07.totvs.network.dto.TranscricaoResponse;
 import com.tlean07.totvs.network.dto.UserDto;
 
 import java.util.List;
 
+import okhttp3.MultipartBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
+import retrofit2.http.Multipart;
 import retrofit2.http.PATCH;
 import retrofit2.http.POST;
+import retrofit2.http.Part;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
@@ -52,6 +56,13 @@ public interface ApiService {
 
     @POST("transcricoes")
     Call<TranscricaoResponse> criarTranscricao(@Body TranscricaoRequest body);
+
+    @Multipart
+    @POST("transcricoes/import/totvs")
+    Call<TranscricaoImportResponse> importTotvsJson(
+            @Part MultipartBody.Part file,
+            @Query("limit") int limit,
+            @Query("offset") int offset);
 
     @GET("alertas")
     Call<List<AlertaResponse>> alertas();

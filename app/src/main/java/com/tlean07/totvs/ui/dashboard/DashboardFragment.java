@@ -130,7 +130,10 @@ public class DashboardFragment extends Fragment {
                 R.color.totvs_danger, StatItem.ACTION_RISCOS));
         stats.add(new StatItem("Alertas novos", String.valueOf(d.alertasNovos),
                 R.color.totvs_warning, StatItem.ACTION_ALERTAS));
-        stats.add(new StatItem("Churn potencial", String.valueOf(d.churnsPotenciais), R.color.totvs_danger));
+        // "Churn" = riscos do tipo CHURN (mesmo dado do gráfico/web); o campo
+        // churnsPotenciais do backend não é populado e vinha sempre zerado.
+        stats.add(new StatItem("Churn", String.valueOf(churnCount(d)),
+                R.color.totvs_danger, StatItem.ACTION_RISCOS));
         statAdapter.submit(stats);
 
         renderCharts(d);
@@ -138,6 +141,15 @@ public class DashboardFragment extends Fragment {
         boolean hasAlerts = d.alertasRecentes != null && !d.alertasRecentes.isEmpty();
         binding.alertsTitle.setVisibility(hasAlerts ? View.VISIBLE : View.GONE);
         alertaAdapter.submit(d.alertasRecentes);
+    }
+
+    /** Churn count derived from the consolidated risk distribution (same as the chart). */
+    private long churnCount(DashboardResponse d) {
+        if (d.riscoPorTipo == null) {
+            return 0;
+        }
+        Long v = d.riscoPorTipo.get("CHURN");
+        return v == null ? 0 : v;
     }
 
     private void renderCharts(DashboardResponse d) {

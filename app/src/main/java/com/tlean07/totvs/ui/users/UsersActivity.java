@@ -11,9 +11,11 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.tlean07.totvs.R;
 import com.tlean07.totvs.TotvsApp;
 import com.tlean07.totvs.databinding.ActivityUsersBinding;
-import com.tlean07.totvs.databinding.DialogCreateUserBinding;
+import com.tlean07.totvs.databinding.SheetCreateUserBinding;
 import com.tlean07.totvs.network.DataRepository;
 import com.tlean07.totvs.network.dto.CreateUserRequest;
 import com.tlean07.totvs.network.dto.UserDto;
@@ -100,41 +102,43 @@ public class UsersActivity extends AppCompatActivity {
     }
 
     private void showCreateDialog() {
-        DialogCreateUserBinding db = DialogCreateUserBinding.inflate(getLayoutInflater());
+        SheetCreateUserBinding sb = SheetCreateUserBinding.inflate(getLayoutInflater());
+        BottomSheetDialog sheet = new BottomSheetDialog(this, R.style.Theme_Totvs_BottomSheet);
+        sheet.setContentView(sb.getRoot());
+
         ArrayAdapter<String> roleAdapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_spinner_dropdown_item,
-                new String[]{"Usuário", "Administrador"});
-        db.newUserRole.setAdapter(roleAdapter);
+                android.R.layout.simple_list_item_1, new String[]{"Usuário", "Administrador"});
+        sb.inputNewRole.setAdapter(roleAdapter);
+        sb.inputNewRole.setText("Usuário", false);
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("Novo usuário")
-                .setView(db.getRoot())
-                .setPositiveButton("Criar", null)
-                .setNegativeButton("Cancelar", null)
-                .create();
-
-        dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            String name = db.newUserName.getText().toString().trim();
-            String email = db.newUserEmail.getText().toString().trim();
-            String password = db.newUserPassword.getText().toString();
-            String role = db.newUserRole.getSelectedItemPosition() == 1 ? "ADMIN" : "USER";
+        sb.buttonCriarUsuario.setOnClickListener(v -> {
+            String name = text(sb.inputNewName.getText());
+            String email = text(sb.inputNewEmail.getText());
+            String password = sb.inputNewPassword.getText() == null
+                    ? "" : sb.inputNewPassword.getText().toString();
+            String role = "Administrador".contentEquals(sb.inputNewRole.getText()) ? "ADMIN" : "USER";
 
             if (TextUtils.isEmpty(name)) {
-                db.newUserName.setError("Informe o nome");
+                sb.inputNewName.setError("Informe o nome");
                 return;
             }
             if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                db.newUserEmail.setError("E-mail inválido");
+                sb.inputNewEmail.setError("E-mail inválido");
                 return;
             }
             if (password.length() < 12) {
-                db.newUserPassword.setError("Mínimo de 12 caracteres");
+                sb.inputNewPassword.setError("Mínimo de 12 caracteres");
                 return;
             }
-            dialog.dismiss();
+            sheet.dismiss();
             create(new CreateUserRequest(name, email, password, role));
-        }));
-        dialog.show();
+        });
+
+        sheet.show();
+    }
+
+    private static String text(CharSequence value) {
+        return value == null ? "" : value.toString().trim();
     }
 
     private void create(CreateUserRequest request) {

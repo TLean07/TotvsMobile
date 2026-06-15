@@ -65,6 +65,21 @@ public class DataRepository {
         });
     }
 
+    /** Uploads a TOTVS export JSON (same as the web "Importar JSON" action). */
+    public void importTotvsJson(byte[] bytes, String fileName,
+                                Callback<com.tlean07.totvs.network.dto.TranscricaoImportResponse> cb) {
+        okhttp3.RequestBody body = okhttp3.RequestBody.create(
+                bytes, okhttp3.MediaType.parse("application/json"));
+        okhttp3.MultipartBody.Part part = okhttp3.MultipartBody.Part.createFormData(
+                "file", fileName != null ? fileName : "totvs.json", body);
+        Calls.execute(api.importTotvsJson(part, 25, 0), result -> {
+            if (result.success) {
+                invalidateInsights();
+            }
+            cb.onResult(result);
+        });
+    }
+
     private void invalidateInsights() {
         insightsCache = null;
         insightsCachedAt = 0L;

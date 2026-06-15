@@ -49,6 +49,10 @@
     <color name="chip_success_fg">#047857</color>
     <color name="chip_muted_bg">#EEF2F7</color>
     <color name="chip_muted_fg">#64748B</color>
+    <color name="chip_warning_bg">#FEF3C7</color>
+    <color name="chip_warning_fg">#B45309</color>
+    <color name="chip_danger_bg">#FEE2E2</color>
+    <color name="chip_danger_fg">#B91C1C</color>
 
     <!-- Surfaces / text (dark) -->
     <color name="background_dark">#0B1220</color>
