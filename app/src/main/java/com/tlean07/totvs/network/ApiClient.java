@@ -37,8 +37,8 @@ public class ApiClient {
 
         OkHttpClient refreshClient = new OkHttpClient.Builder()
                 .cookieJar(cookieJar)
-                .connectTimeout(20, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
+                .connectTimeout(40, TimeUnit.SECONDS)  // tolerate Render free cold starts
+                .readTimeout(40, TimeUnit.SECONDS)
                 .build();
 
         TokenAuthenticator authenticator = new TokenAuthenticator(session, baseUrl, refreshClient);
@@ -48,7 +48,7 @@ public class ApiClient {
                 .addInterceptor(new AuthInterceptor(session, deviceId))
                 .addInterceptor(logging)
                 .authenticator(authenticator)
-                .connectTimeout(20, TimeUnit.SECONDS)
+                .connectTimeout(40, TimeUnit.SECONDS)  // tolerate Render free cold starts
                 .readTimeout(60, TimeUnit.SECONDS)   // AI analysis can be slow
                 .writeTimeout(60, TimeUnit.SECONDS)
                 .retryOnConnectionFailure(true)

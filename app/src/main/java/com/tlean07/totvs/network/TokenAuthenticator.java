@@ -51,6 +51,13 @@ public class TokenAuthenticator implements Authenticator {
             return null; // already retried once — stop.
         }
 
+        // Never try to refresh on the auth endpoints themselves. A 401 from
+        // /auth/login means "wrong credentials" and must surface as-is.
+        String path = response.request().url().encodedPath();
+        if (path.contains("/auth/login") || path.contains("/auth/refresh") || path.contains("/auth/logout")) {
+            return null;
+        }
+
         String failedToken = tokenFromRequest(response.request());
 
         synchronized (lock) {

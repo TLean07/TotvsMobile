@@ -21,9 +21,9 @@ android {
 
     buildTypes {
         debug {
-            // Point at a local backend during development. Override host with
-            // 10.0.2.2 for the emulator loopback to your machine.
-            buildConfigField "String", "API_BASE_URL", "\"http://10.0.2.2:8080/api/\""
+            // Defaults to the shared Render backend so the app works out of the box.
+            // For a local backend, swap to: "http://10.0.2.2:8080/api/" (emulator loopback).
+            buildConfigField "String", "API_BASE_URL", "\"https://challenge-totvs-backend.onrender.com/api/\""
         }
         release {
             minifyEnabled false
