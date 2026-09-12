@@ -115,7 +115,7 @@ public class SecurityFragment extends Fragment {
 
     private void doRevoke() {
         deviceManager.revokeLocal();
-        // Server-side: logout revokes the refresh-token session in MongoDB.
+        // Server-side: logout revokes the refresh-token session in Oracle (REFRESH_TOKENS).
         TotvsApp.get().authRepository().logout(result -> {
             if (!isAdded()) {
                 return;

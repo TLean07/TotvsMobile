@@ -2,6 +2,7 @@ package com.tlean07.totvs.auth;
 
 import com.tlean07.totvs.cas.DeviceManager;
 import com.tlean07.totvs.network.ApiService;
+import com.tlean07.totvs.network.ResponseCache;
 import com.tlean07.totvs.network.Calls;
 import com.tlean07.totvs.network.NetworkResult;
 import com.tlean07.totvs.network.dto.AuthResponse;
@@ -69,6 +70,7 @@ public class AuthRepository {
                     AppExecutors.main(() -> callback.onResult(NetworkResult.ok(response.body())));
                 } else {
                     session.clear();
+                ResponseCache.get().clear();
                     AppExecutors.main(() -> callback.onResult(NetworkResult.error("Sessão expirada")));
                 }
             } catch (Exception e) {
@@ -86,6 +88,7 @@ public class AuthRepository {
                 // best-effort: clear locally regardless of network outcome
             } finally {
                 session.clear();
+                ResponseCache.get().clear();
                 AppExecutors.main(() -> callback.onResult(NetworkResult.ok(null)));
             }
         });

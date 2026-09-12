@@ -3,7 +3,7 @@
 ## Overview
 Native **Android app in Java** (`com.tlean07.totvs`) that is a *second client* for the
 existing **FIAP Challenge** system (`C:\Programming\Java\FIAP\Challenge`). It consumes the
-**same** Spring Boot backend (Render), the **same** MongoDB (through the backend) and the
+**same** Spring Boot backend (Render), the **same** Oracle Database (FIAP, through the backend) and the
 **same** Hugging Face AI service (through the backend). No separate backend, DB or auth was
 created. The web (Next.js on Vercel) keeps working unchanged.
 
@@ -164,3 +164,27 @@ Logo `totvs-logo.png` from `frontend/public`. Tagline "Conversational Intelligen
 - No release signing config / certificate pinning.
 - AI = transcription analysis (no standalone chat endpoint in the backend).
 - Audio import (web VoiceRecorder) not ported; only text + TOTVS JSON import on mobile.
+
+## Branch `oracle` (2026-09-12)
+
+The backend was migrated from MongoDB to Oracle Database (FIAP) on the Challenge repo branch `oracle`,
+deployed as a separate Render service. On this branch the app points to that backend:
+
+- `API_BASE_URL` (defaultConfig + debug in `app/build.gradle`) = `https://challenge-totvs-backend-oracle.onrender.com/api/`.
+- The `main` branch keeps `https://challenge-totvs-backend.onrender.com/api/` (MongoDB backend).
+- REST contract is unchanged (same paths, DTOs, string IDs; IDs are now UUIDs instead of ObjectIds, which
+  the app never validated), so no DTO or repository change was needed. Only comments/docs mentioning MongoDB
+  were updated.
+- Render free plan sleeps when idle: the first call after inactivity can take over a minute; the app's
+  existing retry/error mapping covers it.
+
+## Response cache (2026-09-12)
+
+`network/ResponseCache` (process-scoped, in-memory, TTL per lookup) sits under `DataRepository`: dashboard,
+transcription pages, insights (5 min), alerts and users are served from cache when younger than 60 s; every
+read use-case has a `forceRefresh` overload that pull-to-refresh (and the dashboard retry button) uses to bypass it.
+Writes invalidate what they affect (`criarTranscricao`/`importTotvsJson` -> dashboard, lists, insights, alerts;
+`marcarAlertaVisto` -> alerts + dashboard; user changes -> users). `AuthRepository` clears the cache whenever the
+session is cleared (logout or invalid refresh) because entries are per user. Nothing is persisted to disk.
+The backend has its own Caffeine cache, so the two layers together keep Oracle traffic to one query burst per
+window per user.

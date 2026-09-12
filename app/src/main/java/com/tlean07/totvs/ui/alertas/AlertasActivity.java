@@ -61,7 +61,7 @@ public class AlertasActivity extends AppCompatActivity {
         binding.insightRecycler.setLayoutManager(new LinearLayoutManager(this));
         binding.insightRecycler.setAdapter(adapter);
         binding.insightBack.setOnClickListener(v -> finish());
-        binding.insightSwipe.setOnRefreshListener(this::load);
+        binding.insightSwipe.setOnRefreshListener(() -> load(true));
         binding.insightRetry.setOnClickListener(v -> load());
 
         addFilter(binding.insightPrimaryFilters, "Todos", "", true, v -> status = v);
@@ -78,11 +78,15 @@ public class AlertasActivity extends AppCompatActivity {
     }
 
     private void load() {
+        load(false);
+    }
+
+    private void load(boolean forceRefresh) {
         binding.insightState.setVisibility(View.GONE);
         if (all.isEmpty()) {
             binding.insightProgress.setVisibility(View.VISIBLE);
         }
-        data.alertas(result -> {
+        data.alertas(forceRefresh, result -> {
             if (binding == null) {
                 return;
             }

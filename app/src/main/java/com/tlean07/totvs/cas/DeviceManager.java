@@ -18,7 +18,7 @@ import java.util.UUID;
  * request as {@code X-Device-Id} for backend auditing) stored encrypted in the
  * Keystore. On login the install is bound to the authenticated user. The
  * server-side counterpart is the refresh-token session already persisted in
- * MongoDB ({@code refresh_tokens}); revoking it there (logout, refresh reuse, or
+ * Oracle Database ({@code REFRESH_TOKENS}); revoking it there (logout, refresh reuse, or
  * a future {@code /api/mobile/devices/{id}/revoke} endpoint) immediately breaks
  * this device's ability to refresh — biometrics cannot override that.
  */

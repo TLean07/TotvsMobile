@@ -52,16 +52,20 @@ public class UsersActivity extends AppCompatActivity {
         binding.usersRecycler.setAdapter(adapter);
 
         binding.usersBack.setOnClickListener(v -> finish());
-        binding.usersSwipe.setOnRefreshListener(this::load);
+        binding.usersSwipe.setOnRefreshListener(() -> load(true));
         binding.usersFab.setOnClickListener(v -> showCreateDialog());
 
         load();
     }
 
     private void load() {
+        load(false);
+    }
+
+    private void load(boolean forceRefresh) {
         binding.usersSwipe.setRefreshing(true);
         binding.usersState.setVisibility(View.GONE);
-        data.users(result -> {
+        data.users(forceRefresh, result -> {
             binding.usersSwipe.setRefreshing(false);
             if (result.success) {
                 render(result.data);

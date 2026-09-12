@@ -95,17 +95,17 @@ public class DashboardFragment extends Fragment {
             binding.dashGreeting.setText("Olá, " + firstName(user.name));
         }
 
-        binding.swipeRefresh.setOnRefreshListener(this::load);
-        binding.dashRetry.setOnClickListener(v -> load());
+        binding.swipeRefresh.setOnRefreshListener(() -> load(true));
+        binding.dashRetry.setOnClickListener(v -> load(true));
         binding.chartRiscoCard.setOnClickListener(v -> openRiscos());
         binding.chartOportunidadeCard.setOnClickListener(v -> openOportunidades());
-        load();
+        load(false);
     }
 
-    private void load() {
+    private void load(boolean forceRefresh) {
         binding.swipeRefresh.setRefreshing(true);
         hideState();
-        data.dashboard(result -> {
+        data.dashboard(forceRefresh, result -> {
             // The view may have been destroyed while the request was in flight
             // (tab switch, lock/unlock) — drop the result if so.
             if (binding == null) {

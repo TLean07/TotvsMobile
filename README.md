@@ -21,7 +21,7 @@
 O **TOTVS Mobile** é um aplicativo Android nativo desenvolvido em **Java** que funciona como uma
 **segunda forma de acesso** ao sistema de inteligência conversacional do *FIAP Challenge*. A
 versão web (Next.js) e a versão mobile são dois clientes diferentes consumindo **o mesmo backend
-Java (Spring Boot, hospedado no Render)**, **o mesmo banco MongoDB** e **o mesmo serviço de IA
+Java (Spring Boot, hospedado no Render)**, **o mesmo banco Oracle Database (FIAP)** e **o mesmo serviço de IA
 (Hugging Face)** — tudo através do backend.
 
 Nada é duplicado: não há backend separado, banco separado nem autenticação paralela. O app reaproveita

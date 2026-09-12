@@ -86,13 +86,17 @@ public class AiFragment extends Fragment {
             }
         });
 
-        binding.aiSwipe.setOnRefreshListener(this::loadFirstPage);
+        binding.aiSwipe.setOnRefreshListener(() -> loadFirstPage(true));
         binding.aiRetry.setOnClickListener(v -> loadFirstPage());
         binding.aiFab.setOnClickListener(v -> showCreateDialog());
         loadFirstPage();
     }
 
     private void loadFirstPage() {
+        loadFirstPage(false);
+    }
+
+    private void loadFirstPage(boolean forceRefresh) {
         if (loadingPage) {
             binding.aiSwipe.setRefreshing(false);
             return;
@@ -100,10 +104,14 @@ public class AiFragment extends Fragment {
         nextPage = 0;
         lastPage = false;
         adapter.clear();
-        loadPage(true);
+        loadPage(true, forceRefresh);
     }
 
     private void loadPage(boolean firstPage) {
+        loadPage(firstPage, false);
+    }
+
+    private void loadPage(boolean firstPage, boolean forceRefresh) {
         if (loadingPage || lastPage) {
             return;
         }
@@ -112,7 +120,7 @@ public class AiFragment extends Fragment {
         binding.aiSwipe.setRefreshing(firstPage);
         binding.aiLoadMore.setVisibility(firstPage ? View.GONE : View.VISIBLE);
 
-        data.transcricoesPaginadas(nextPage, PAGE_SIZE, result -> {
+        data.transcricoesPaginadas(nextPage, PAGE_SIZE, forceRefresh, result -> {
             if (binding == null) {
                 return;
             }
