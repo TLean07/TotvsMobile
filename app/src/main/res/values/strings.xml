@@ -334,6 +334,7 @@
     <string name="rev_export_txt">Exportar como TXT</string>
     <string name="rev_export_pdf">Exportar como PDF</string>
     <string name="rev_share_summary">Compartilhar resumo</string>
+    <string name="rev_export_audio">Exportar áudio</string>
     <string name="rev_preview_title">Prévia da LeanIA (no celular)</string>
     <string name="rev_preview_hint">Análise feita offline durante a gravação. A análise completa vem do servidor após o envio.</string>
     <string name="rev_voice_learned">Sua voz foi registrada: nas próximas gravações você será identificado automaticamente.</string>

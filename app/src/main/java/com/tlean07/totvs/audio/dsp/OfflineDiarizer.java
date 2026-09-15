@@ -81,6 +81,8 @@ public final class OfflineDiarizer {
     public static double KAPPA = 20;
     /** Only pitched frames carry the voice; noise, breaths and reverb tails are ignored. */
     public static boolean VOICED_ONLY = true;
+    /** ...unless pitch detection found fewer than this share of the speech frames. */
+    public static double MIN_VOICED_FRACTION = 0.30;
     /** Smallest piece a cut may produce (~1 s). */
     static final int MIN_SPLIT_FRAMES = 60;
     static final int SPLIT_STEP = 4;
@@ -223,6 +225,13 @@ public final class OfflineDiarizer {
         if (live.isEmpty() || n < 2 * MIN_CLUSTER_FRAMES) {
             return trivial();
         }
+        int voiced = 0;
+        for (int i = 0; i < n; i++) {
+            if (!Float.isNaN(frames.pitchOctaves(i))) {
+                voiced++;
+            }
+        }
+        voicedOnly = VOICED_ONLY && voiced >= MIN_VOICED_FRACTION * n;
         normalise();
         // 1. pieces = live utterances cut at BIC change points
         List<int[]> pieces = new ArrayList<>(); // {liveIndex, from, to}
@@ -793,8 +802,11 @@ public final class OfflineDiarizer {
         }
     }
 
+    /** Set in {@link #runLocked}: with little pitched speech (reverberant room, far talkers) every speech frame counts. */
+    private boolean voicedOnly = VOICED_ONLY;
+
     private boolean usable(int frame) {
-        return !VOICED_ONLY || !Float.isNaN(frames.pitchOctaves(frame));
+        return !voicedOnly || !Float.isNaN(frames.pitchOctaves(frame));
     }
 
     private GaussianStats stats(int a, int b) {

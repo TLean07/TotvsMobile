@@ -187,7 +187,7 @@ public final class RecorderSession {
         AppExecutors.io(() -> {
             try {
                 dir = store.newDir();
-                pipeline = new AudioPipeline(new File(dir, RecordingStore.WAV), pipelineListener);
+                pipeline = new AudioPipeline(null, pipelineListener);
                 VoskModelManager models = VoskModelManager.get(app);
                 if (models.isReady()) {
                     try {
@@ -208,7 +208,7 @@ public final class RecorderSession {
                     }
                 }
                 capture = new AudioCapture();
-                capture.start((pcm, length) -> {
+                capture.start(new File(dir, RecordingStore.WAV), (pcm, length) -> {
                     try {
                         pipeline.feed(pcm, length);
                     } catch (IOException e) {

@@ -650,11 +650,48 @@ public class RevisaoActivity extends AppCompatActivity {
 
     // --- more menu: export / share ---
 
+    /** Shares the recording's audio itself (for a colleague, or to send for diagnosis). */
+    private void exportAudio() {
+        if (rec == null) {
+            return;
+        }
+        AppExecutors.io(() -> {
+            try {
+                java.io.File src = store.audioFile(rec);
+                if (src == null || !src.exists()) {
+                    throw new java.io.IOException("áudio não encontrado");
+                }
+                java.io.File dir = new java.io.File(getCacheDir(), "export");
+                if (!dir.isDirectory() && !dir.mkdirs()) {
+                    throw new java.io.IOException("cache indisponível");
+                }
+                String ext = src.getName().endsWith(".wav") ? ".wav" : ".m4a";
+                String base = rec.tituloOuPadrao().replaceAll("[^A-Za-z0-9À-ÿ ]", "").trim().replace(' ', '_');
+                java.io.File dst = new java.io.File(dir, (base.isEmpty() ? "reuniao" : base) + "_" + rec.id + ext);
+                try (java.io.InputStream in = new java.io.FileInputStream(src);
+                     java.io.OutputStream out = new java.io.FileOutputStream(dst)) {
+                    byte[] buf = new byte[64 * 1024];
+                    int n;
+                    while ((n = in.read(buf)) > 0) {
+                        out.write(buf, 0, n);
+                    }
+                }
+                com.tlean07.totvs.security.AuditLog.get(this).record("gravacao.audio_exportado", rec.id);
+                AppExecutors.main(() -> com.tlean07.totvs.audio.TranscriptExporter.share(this, dst,
+                        ext.equals(".wav") ? "audio/wav" : "audio/mp4"));
+            } catch (Exception e) {
+                AppExecutors.main(() -> Toast.makeText(this, getString(R.string.error_generic) + ": " + e.getMessage(),
+                        Toast.LENGTH_LONG).show());
+            }
+        });
+    }
+
     private void showMoreMenu(View anchor) {
         android.widget.PopupMenu menu = new android.widget.PopupMenu(this, anchor);
         menu.getMenu().add(0, 1, 0, R.string.rev_export_txt);
         menu.getMenu().add(0, 2, 1, R.string.rev_export_pdf);
         menu.getMenu().add(0, 3, 2, R.string.rev_share_summary);
+        menu.getMenu().add(0, 4, 3, R.string.rev_export_audio);
         menu.setOnMenuItemClickListener(item -> {
             readForm();
             switch (item.getItemId()) {
@@ -666,6 +703,9 @@ public class RevisaoActivity extends AppCompatActivity {
                     return true;
                 case 3:
                     shareSummary();
+                    return true;
+                case 4:
+                    exportAudio();
                     return true;
                 default:
                     return false;

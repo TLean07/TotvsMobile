@@ -314,3 +314,15 @@ Facts learned while tuning (TTS dialogues Antonio/Francisca/Duarte/Thalita via e
 - Gravações curtas (teste de 15 s): mínimos de voz/peça escalam com a fala total (15 %/8 %, piso
   40 frames) e os rótulos ao vivo entram como candidato de inicialização. Corpus curto
   (`dialogo_curto_*`): mulher+homem e troca rápida OK; dois homens de mesmo tom em 15 s ainda vira 1.
+
+## Captura de áudio refeita (2026-09-15, madrugada)
+- Usuário: "a gravação tá pegando o áudio mal e ainda tá juntando as pessoas". Análise do código:
+  `AudioCapture` abria VOICE_RECOGNITION a 16 kHz + NoiseSuppressor — no Samsung isso é o caminho de
+  voz de chamada: supressor de ruído/eco trata quem não está perto do celular como ruído e abafa a
+  segunda pessoa; 16 kHz cai no caminho banda estreita. Agora: UNPROCESSED (se o aparelho suporta)
+  → MIC → VOICE_RECOGNITION; taxa nativa primeiro (48 k/44,1 k); sem NoiseSuppressor; AGC desligado
+  quando exposto. O WAV guardado é gravado pela própria captura na taxa nativa (`capture.start(wav,
+  sink)`); o `AudioPipeline` recebe só a cópia 16 kHz (WAV nulo em gravações ao vivo). AAC padrão
+  64 kbps (opções 32/64/128). `OfflineDiarizer` usa todos os frames de fala quando < 30 % têm pitch.
+- "Exportar áudio" no menu da revisão (copia para cache/export e compartilha) — serve para o
+  usuário me mandar uma gravação real para ajustar a separação.

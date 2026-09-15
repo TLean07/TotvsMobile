@@ -6,8 +6,8 @@ import android.content.SharedPreferences;
 /** User preferences of the meeting recorder (quality, retention, consent). */
 public final class RecorderSettings {
 
-    public static final int[] BITRATES = {32_000, 48_000, 96_000};
-    public static final String[] BITRATE_LABELS = {"Econômica (32 kbps)", "Padrão (48 kbps)", "Alta (96 kbps)"};
+    public static final int[] BITRATES = {32_000, 64_000, 128_000};
+    public static final String[] BITRATE_LABELS = {"Econômica (32 kbps)", "Padrão (64 kbps)", "Alta (128 kbps)"};
     public static final int[] RETENTION_DAYS = {0, 7, 30};
     public static final String[] RETENTION_LABELS = {"Nunca", "Após 7 dias", "Após 30 dias"};
 
@@ -19,7 +19,7 @@ public final class RecorderSettings {
     }
 
     public int bitrate() {
-        return prefs.getInt("bitrate", 48_000);
+        return prefs.getInt("bitrate", 64_000);
     }
 
     public void setBitrate(int bps) {
