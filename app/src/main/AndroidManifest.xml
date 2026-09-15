@@ -6,6 +6,12 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
+    <!-- Meeting recorder: microphone capture that keeps running with the screen off. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name=".TotvsApp"
         android:allowBackup="false"
@@ -60,6 +66,34 @@
             android:name=".ui.alertas.AlertasActivity"
             android:exported="false"
             android:theme="@style/Theme.TotvsMobile.NoActionBar" />
+
+        <!-- Meeting recorder -->
+        <activity
+            android:name=".ui.gravador.GravadorActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.TotvsMobile.NoActionBar" />
+
+        <activity
+            android:name=".ui.gravador.RevisaoActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.TotvsMobile.NoActionBar" />
+
+        <activity
+            android:name=".ui.gravador.GravacoesActivity"
+            android:exported="false"
+            android:theme="@style/Theme.TotvsMobile.NoActionBar" />
+
+        <activity
+            android:name=".ui.gravador.ImportarAudioActivity"
+            android:exported="false"
+            android:theme="@style/Theme.TotvsMobile.NoActionBar" />
+
+        <service
+            android:name=".audio.MeetingRecorderService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
     </application>
 
 </manifest>

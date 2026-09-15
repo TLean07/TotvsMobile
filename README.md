@@ -48,6 +48,13 @@ mobile com **biometria**, **armazenamento via Android Keystore** e **vínculo de
 - **Telas de Riscos e Oportunidades** — Listas consolidadas com filtros por tipo e severidade
 - **Tela de Alertas** — Lista com filtros por status e prioridade, e ação "Marcar como visto"
 - **Análises de IA** — Lista paginada; **nova análise** por texto **ou importação de JSON do TOTVS**
+- **Gravador de reunião** — Grava a reunião em tempo real (serviço em primeiro plano, continua com a
+  tela apagada), **identifica automaticamente a troca de pessoa falando** (timbre + tom de voz,
+  100% no celular), transcreve offline em português (Vosk) e mostra a transcrição ao vivo já separada
+  por pessoa; marcadores de momentos, pausa automática em chamada, revisão com player e linha do tempo
+  por falante, edição de nomes/papéis/falas e envio para a análise da LeanIA no formato `[LOCUTOR N]:`
+- **Importar áudio existente** — Qualquer gravação (.wav/.m4a/.mp3/.ogg) passa pelo mesmo
+  reconhecimento de falantes e transcrição no celular; opção de mandar o áudio para o servidor
 - **Administração de usuários** (admin) — Listar, criar (em bottom sheet), ativar/desativar
 - **Modo escuro completo** — Tema claro/escuro que acompanha o sistema; fundos viram azul-escuro,
   textos, chips e gráficos se adaptam

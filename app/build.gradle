@@ -62,6 +62,9 @@ dependencies {
     implementation libs.credentials
     implementation libs.credentials.play.services
 
+    // Offline speech recognition (Kaldi) for the meeting recorder; the pt-BR model is downloaded on first use.
+    implementation libs.vosk.android
+
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core

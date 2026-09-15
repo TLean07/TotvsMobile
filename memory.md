@@ -163,7 +163,7 @@ Logo `totvs-logo.png` from `frontend/public`. Tagline "Conversational Intelligen
   local + via logout, not a dedicated device API yet.
 - No release signing config / certificate pinning.
 - AI = transcription analysis (no standalone chat endpoint in the backend).
-- Audio import (web VoiceRecorder) not ported; only text + TOTVS JSON import on mobile.
+- Audio: see "Gravador de reunião" below (recording, diarization and ASR are on-device now).
 
 ## Branch `oracle` (2026-09-12)
 
@@ -188,3 +188,46 @@ Writes invalidate what they affect (`criarTranscricao`/`importTotvsJson` -> dash
 session is cleared (logout or invalid refresh) because entries are per user. Nothing is persisted to disk.
 The backend has its own Caffeine cache, so the two layers together keep Oracle traffic to one query burst per
 window per user.
+
+## Gravador de reunião (2026-09-15)
+Recording, speaker-change detection and speech-to-text run **on the phone**; the backend is untouched
+(the server `/api/transcricoes/audio` route exists but depends on Parakeet, which is off on the free
+HF Space, so the phone sends the finished transcript through the normal `POST /api/transcricoes`).
+
+```
+com.tlean07.totvs.audio
+├── dsp/            pure Java, unit-tested, no Android deps (shared with a JVM harness)
+│   ├── Fft, FeatureExtractor      16 kHz PCM → 16 ms frames: energy, 13 MFCC (26 mel), pitch (autocorr), centroid
+│   ├── VoiceActivityDetector      adaptive noise floor (+9 dB, min -52 dBFS), 3-frame onset, 300 ms hangover
+│   ├── SpeakerProfile             mean MFCC c1..c12 (voiced frames) + mean log2 pitch; distanceTo() ≈ 1.0 = other person
+│   ├── SpeakerClusterer           online centroids; new speaker if d > 1.05×inflation(short utterances); ≥40 voiced frames to found one
+│   ├── SpeakerDiarizer            VAD segments + provisional label every 0.5 s + in-utterance split search (novelty z>1.35 or
+│   │                              "tail closer to another known voice") + refine() second pass at the end (merge <0.95,
+│   │                              re-attribute, blips follow neighbours, drop <1.5 s voices, renumber by first appearance)
+│   ├── Resampler, WavIo           any rate/channels → 16 kHz mono; crash-safe WAV writer (+repair)
+├── asr/            TranscriptionEngine, VoskEngine (queue + worker thread, word timestamps), TranscriptAssembler
+│                   (words ↔ speaker segments by midpoint), TranscriptFormatter ([LOCUTOR N]: …), VoskModelManager
+│                   (downloads vosk-model-small-pt-0.3, 32 MB, into filesDir/vosk once; offline afterwards)
+├── AudioCapture (VOICE_RECOGNITION + NoiseSuppressor, 16 kHz with fallback rates), AudioPipeline (wav + diarizer + asr
+│   + snapshots every 250 ms), RecorderSession (state machine, owned by MeetingRecorderService = foreground service
+│   type microphone with pause/resume/stop notification actions; auto-pause on phone call, API 31+),
+│   RecordingFinalizer (meta.json first, then WAV → M4A 48 kbps via MediaCodec), AudioFileDecoder + FileTranscriber
+│   (import any file through the same pipeline), VocabularioTotvs (fixes "protege"→Protheus, "todos os fluidos"→TOTVS Fluig…)
+└── store/ Recording (+unirFalantes, recalcularTemposDeFala) and RecordingStore (filesDir/gravacoes/<id>/meta.json + audio)
+ui/gravador: GravadorActivity (clock, WaveformView coloured by speaker, chips, live transcript), RevisaoActivity (player
+with SpeakerTimelineView, speaker rename/role/merge, turn edit, send text or audio), GravacoesActivity, ImportarAudioActivity.
+```
+
+Facts learned while tuning (TTS dialogues Antonio/Francisca/Duarte/Thalita via edge-tts, JVM harness in the session scratchpad):
+- Same-speaker utterance distance 0.2–0.6 (long) but up to ~1.9 for windows under 0.5 s; different speakers 2.0–2.8.
+  Everything short therefore gets an inflated threshold and can never found a speaker — a new voice is only created
+  once it has talked ≥ ~0.65 s of voiced audio, and the refine() pass fixes what was mislabelled before that.
+- Split search must normalise distance by the inflation curve, otherwise the shortest tail always "wins" and splits
+  the same speaker. Accuracy on the synthetic dialogues: 2 speakers always found, 84–92 % of speech time correct,
+  3-speaker dialogue 3 found after refine (4 live), two male voices 78 %.
+- Vosk small pt: RTF ≈ 0.1 on a PC, fine on the phone with the queue; product names need the vocabulary fix.
+- Emulator has no audio device: AudioRecord returns instantly, so the clock runs faster than wall time there
+  (not on a real phone). `adb shell settings put global totvs_allow_capture 1` disables FLAG_SECURE in debug builds
+  for screenshots; `app/src/debug/AndroidManifest.xml` exports Gravador/Gravacoes so `am start` works without login.
+- The first manifest write silently failed once — always confirm the merged manifest has the service, or the
+  foreground service crashes with ActivityNotFound/ServiceNotFound.

@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/revRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_light">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:id="@+id/revHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/gradient_header"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="18dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageButton
+                    android:id="@+id/revBack"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/cancel"
+                    android:src="@drawable/ic_arrow_back"
+                    app:tint="@android:color/white" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:letterSpacing="0.12"
+                    android:text="@string/rev_eyebrow"
+                    android:textColor="#CFE3F4"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:id="@+id/revBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_chip_glass"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="4dp"
+                    android:text="@string/rev_draft_badge"
+                    android:textColor="@android:color/white"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <ImageButton
+                    android:id="@+id/revDelete"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="4dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/rev_delete"
+                    android:src="@drawable/ic_delete"
+                    app:tint="@android:color/white" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/revTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="@string/rev_title_default"
+                android:textColor="@android:color/white"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/revMeta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:textColor="#CFE3F4"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/revScroll"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingBottom="120dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:focusableInTouchMode="true"
+                android:orientation="vertical"
+                android:paddingHorizontal="16dp"
+                android:paddingTop="14dp">
+
+                <!-- Player -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardBackgroundColor="@color/surface_light"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/rev_player_title"
+                            android:textColor="@color/text_primary_light"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <ImageButton
+                                android:id="@+id/revPlay"
+                                android:layout_width="48dp"
+                                android:layout_height="48dp"
+                                android:background="@drawable/bg_record_button_active"
+                                android:contentDescription="@string/grav_resume"
+                                android:src="@drawable/ic_play"
+                                app:tint="@android:color/white" />
+
+                            <com.tlean07.totvs.ui.gravador.SpeakerTimelineView
+                                android:id="@+id/revTimeline"
+                                android:layout_width="0dp"
+                                android:layout_height="40dp"
+                                android:layout_marginStart="12dp"
+                                android:layout_weight="1"
+                                android:paddingHorizontal="8dp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/revPosition"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:fontFamily="monospace"
+                                android:text="00:00"
+                                android:textColor="@color/text_muted_light"
+                                android:textSize="12sp"
+                                tools:ignore="HardcodedText" />
+
+                            <TextView
+                                android:id="@+id/revDuration"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="monospace"
+                                android:text="00:00"
+                                android:textColor="@color/text_muted_light"
+                                android:textSize="12sp"
+                                tools:ignore="HardcodedText" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Speakers -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    app:cardBackgroundColor="@color/surface_light"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/rev_speakers_title"
+                            android:textColor="@color/text_primary_light"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="@string/rev_speakers_hint"
+                            android:textColor="@color/text_muted_light"
+                            android:textSize="12sp" />
+
+                        <LinearLayout
+                            android:id="@+id/revSpeakers"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:orientation="vertical" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Meeting data -->
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    app:cardBackgroundColor="@color/surface_light"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/rev_form_title"
+                            android:textColor="@color/text_primary_light"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.Totvs.TextInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:hint="@string/rev_cliente">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/revCliente"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textCapWords"
+                                android:maxLines="1"
+                                android:textColor="@color/on_background_light" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.Totvs.TextInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:hint="@string/rev_vendedor">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/revVendedor"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textCapWords"
+                                android:maxLines="1"
+                                android:textColor="@color/on_background_light" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.Totvs.TextInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:hint="@string/rev_participantes">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/revParticipantes"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textCapSentences|textMultiLine"
+                                android:maxLines="3"
+                                android:textColor="@color/on_background_light" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Markers -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/revMarkersCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:visibility="gone"
+                    app:cardBackgroundColor="@color/surface_light"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/rev_markers_title"
+                            android:textColor="@color/text_primary_light"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <LinearLayout
+                            android:id="@+id/revMarkers"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:orientation="vertical" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Transcript -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:text="@string/rev_transcript_title"
+                    android:textColor="@color/text_primary_light"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/revTranscriptHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginBottom="4dp"
+                    android:text="@string/rev_transcript_hint"
+                    android:textColor="@color/text_muted_light"
+                    android:textSize="12sp" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/revTranscript"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false" />
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
+    </LinearLayout>
+
+    <!-- Sticky actions -->
+    <LinearLayout
+        android:id="@+id/revActions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@color/surface_light"
+        android:elevation="8dp"
+        android:orientation="vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="12dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/revSendText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="52dp"
+            android:text="@string/rev_send_text"
+            app:icon="@drawable/ic_send"
+            app:iconGravity="textEnd"
+            app:iconTint="@android:color/white" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/revSendAudio"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:minHeight="40dp"
+            android:text="@string/rev_send_audio"
+            android:textColor="@color/totvs_secondary"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/revOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#B30B1220"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminateTint="@android:color/white" />
+
+        <TextView
+            android:id="@+id/revOverlayText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/rev_sending"
+            android:textColor="@android:color/white"
+            android:textSize="14sp" />
+    </LinearLayout>
+</FrameLayout>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?attr/selectableItemBackground"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingVertical="8dp">
+
+    <TextView
+        android:id="@+id/falanteAvatar"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:background="@drawable/bg_record_button_active"
+        android:gravity="center"
+        android:textColor="@android:color/white"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        tools:text="1" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/falanteNome"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/text_primary_light"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            tools:text="Pessoa 1" />
+
+        <TextView
+            android:id="@+id/falanteMeta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/text_muted_light"
+            android:textSize="12sp"
+            tools:text="Vendedor · 54% da conversa" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/falantePapel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_pill_role"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="4dp"
+        android:textColor="@color/chip_role_fg"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        tools:text="Vendedor" />
+
+    <ImageView
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_marginStart="8dp"
+        android:contentDescription="@null"
+        android:src="@drawable/ic_edit"
+        app:tint="@color/text_muted_light" />
+</LinearLayout>

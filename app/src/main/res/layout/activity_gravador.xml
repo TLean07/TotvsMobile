@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/gravRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_light">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:id="@+id/gravHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/gradient_header"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="18dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageButton
+                    android:id="@+id/gravBack"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/cancel"
+                    android:src="@drawable/ic_arrow_back"
+                    app:tint="@android:color/white" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:letterSpacing="0.12"
+                    android:text="@string/grav_eyebrow"
+                    android:textColor="#CFE3F4"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:id="@+id/gravRecBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_chip_glass"
+                    android:drawableStart="@drawable/dot_accent"
+                    android:drawablePadding="6dp"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="4dp"
+                    android:text="REC"
+                    android:textColor="@android:color/white"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:visibility="invisible"
+                    tools:ignore="HardcodedText" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/grav_title"
+                android:textColor="@android:color/white"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/gravSubtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:text="@string/grav_subtitle_idle"
+                android:textColor="#CFE3F4"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- Monitor: clock + waveform + who is speaking -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="14dp"
+            app:cardBackgroundColor="@color/surface_light"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="16dp"
+                android:paddingTop="14dp"
+                android:paddingBottom="12dp">
+
+                <TextView
+                    android:id="@+id/gravClock"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:gravity="center"
+                    android:text="00:00"
+                    android:textColor="@color/text_primary_light"
+                    android:textSize="40sp"
+                    android:textStyle="bold"
+                    tools:ignore="HardcodedText" />
+
+                <com.tlean07.totvs.ui.gravador.WaveformView
+                    android:id="@+id/gravWave"
+                    android:layout_width="match_parent"
+                    android:layout_height="64dp"
+                    android:layout_marginTop="6dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <View
+                        android:id="@+id/gravSpeakingDot"
+                        android:layout_width="10dp"
+                        android:layout_height="10dp"
+                        android:background="@drawable/dot_accent" />
+
+                    <TextView
+                        android:id="@+id/gravSpeaking"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:text="@string/grav_nobody"
+                        android:textColor="@color/text_primary_light"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/gravAsrLag"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text_muted_light"
+                        android:textSize="11sp"
+                        android:visibility="gone" />
+                </LinearLayout>
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:overScrollMode="never"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:id="@+id/gravSpeakers"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal" />
+                </HorizontalScrollView>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Speech model status (download once) -->
+        <LinearLayout
+            android:id="@+id/gravAsrCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_card_outline"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="10dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/gravAsrText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_secondary_light"
+                    android:textSize="12sp" />
+
+                <ProgressBar
+                    android:id="@+id/gravAsrProgress"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:max="100"
+                    android:progressTint="@color/totvs_secondary"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/gravAsrButton"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:minHeight="36dp"
+                android:text="@string/grav_asr_download"
+                android:textColor="@color/totvs_secondary"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/gravTranscript"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="12dp" />
+
+        <TextView
+            android:id="@+id/gravTranscriptEmpty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:paddingHorizontal="32dp"
+            android:paddingVertical="8dp"
+            android:text="@string/grav_transcript_empty"
+            android:textColor="@color/text_muted_light"
+            android:textSize="13sp" />
+
+        <!-- Controls -->
+        <LinearLayout
+            android:id="@+id/gravControls"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/surface_light"
+            android:elevation="6dp"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingHorizontal="24dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="16dp">
+
+            <LinearLayout
+                android:id="@+id/gravMarkerWrap"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageButton
+                    android:id="@+id/gravMarker"
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    android:background="@drawable/bg_speaker_pill"
+                    android:contentDescription="@string/grav_marker"
+                    android:src="@drawable/ic_flag"
+                    app:tint="@color/action_fg" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/grav_marker"
+                    android:textColor="@color/text_secondary_light"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageButton
+                    android:id="@+id/gravMain"
+                    android:layout_width="76dp"
+                    android:layout_height="76dp"
+                    android:background="@drawable/bg_record_button"
+                    android:contentDescription="@string/grav_start"
+                    android:elevation="4dp"
+                    android:src="@drawable/ic_mic"
+                    app:tint="@android:color/white" />
+
+                <TextView
+                    android:id="@+id/gravMainLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/grav_start"
+                    android:textColor="@color/text_secondary_light"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/gravStopWrap"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageButton
+                    android:id="@+id/gravStop"
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    android:background="@drawable/bg_speaker_pill"
+                    android:contentDescription="@string/grav_stop"
+                    android:src="@drawable/ic_stop"
+                    app:tint="@color/action_fg" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/grav_stop"
+                    android:textColor="@color/text_secondary_light"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Finishing overlay -->
+    <LinearLayout
+        android:id="@+id/gravOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#B30B1220"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:indeterminateTint="@android:color/white" />
+
+        <TextView
+            android:id="@+id/gravOverlayText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:textColor="@android:color/white"
+            android:textSize="14sp" />
+    </LinearLayout>
+</FrameLayout>
