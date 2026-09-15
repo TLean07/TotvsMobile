@@ -270,3 +270,13 @@ Facts learned while tuning (TTS dialogues Antonio/Francisca/Duarte/Thalita via e
 - Observado: com o backend lento, o token expirou no meio do carregamento paginado (401 "Nao autenticado");
   o loader tenta cada página 2x. O endpoint /transcricoes/cliente/{nome} com espaços precisa de
   URL-encode (Retrofit @Path faz).
+
+## APK enxuto + bug da LeanIA local (2026-09-15, noite)
+- R8 (`minifyEnabled` + `shrinkResources`) ligado também no debug; keep rules em `proguard-rules.pro` para
+  DTOs Gson, Recording, leania, Vosk/JNA, Room/WorkManager (`WorkDatabase_Impl` sem keep crasha no
+  startup). APK arm64 caiu de 31 MB para 16,9 MB.
+- O packaging incremental do AGP deixa "buracos" no zip (APK de 32 MB com 17 MB de conteúdo). Para
+  entregar, sempre `:app:clean :app:assembleDebug`.
+- `Pattern.UNICODE_CHARACTER_CLASS` não existe no Android (IllegalArgumentException no <clinit> do
+  `LeanIALocalAnalyzer`, derrubava o app ao iniciar a gravação). Trocado por `[\p{L}\p{Nd}_]+`; teste
+  `LeanIALocalAnalyzerTest` cobre o initializer.

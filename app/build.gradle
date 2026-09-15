@@ -24,9 +24,14 @@ android {
             // Defaults to the shared Render backend (Oracle) so the app works out of the box.
             // For a local backend, swap to: "http://10.0.2.2:8080/api/" (emulator loopback).
             buildConfigField "String", "API_BASE_URL", "\"https://challenge-totvs-backend-oracle.onrender.com/api/\""
+            // R8 also on debug: the unshrunk dex alone is ~19 MB; keep rules in proguard-rules.pro.
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }

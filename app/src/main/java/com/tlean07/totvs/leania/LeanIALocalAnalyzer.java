@@ -205,7 +205,8 @@ public class LeanIALocalAnalyzer {
             "(?:r\\$\\s*)?(\\d+(?:[.,]\\d+)?)\\s*(?:a|e|ate)\\s*(?:r\\$\\s*)?(\\d+(?:[.,]\\d+)?)\\s*"
                     + "(mil(?:hoes|hao)?|k|milhoes|milhao)(\\s*(?:/|por)\\s*(?:mes|ano))?");
     private static final Pattern REGEX_ANONIMO = Pattern.compile("\\[(PESSOA|EMPRESA|LOCAL|EMAIL|TELEFONE|CPF|CNPJ)]", Pattern.CASE_INSENSITIVE);
-    private static final Pattern REGEX_PALAVRA = Pattern.compile("\\w+", Pattern.UNICODE_CHARACTER_CLASS);
+    // Android's java.util.regex rejects UNICODE_CHARACTER_CLASS; spell the class out instead.
+    private static final Pattern REGEX_PALAVRA = Pattern.compile("[\\p{L}\\p{Nd}_]+");
 
     // ---------------------------------------------------------------- estruturas
 
