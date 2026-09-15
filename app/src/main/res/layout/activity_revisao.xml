@@ -380,6 +380,17 @@
                     android:textColor="@color/text_muted_light"
                     android:textSize="12sp" />
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/revTranscribe"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="6dp"
+                    android:text="@string/rev_transcribe_now"
+                    android:visibility="gone"
+                    app:icon="@drawable/ic_mic"
+                    app:iconGravity="textStart" />
+
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/revTranscript"
                     android:layout_width="match_parent"

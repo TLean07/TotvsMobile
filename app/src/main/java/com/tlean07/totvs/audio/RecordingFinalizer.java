@@ -60,33 +60,20 @@ public final class RecordingFinalizer {
         r.modeloAsr = extras.modeloAsr;
         r.audioArquivo = RecordingStore.WAV;
 
-        int speakers = Math.max(pipeline.speakerCount(), 0);
-        long[] talk = pipeline.snapshot().talkTimeMs;
-        List<SpeakerProfile> profiles = pipeline.speakerProfiles();
-        for (int i = 0; i < speakers; i++) {
-            Recording.Falante f = r.falante(i);
-            f.tempoFalaMs = i < talk.length ? talk[i] : 0;
-            f.nome = extras.nomes.get(i);
-            if (i < profiles.size()) {
-                f.voz = profiles.get(i).export();
+        // Names were typed against the live labels; the final pass may have renumbered them.
+        java.util.Map<Integer, String> nomes = new java.util.HashMap<>();
+        int[] liveToFinal = pipeline.liveToFinal();
+        for (java.util.Map.Entry<Integer, String> e : extras.nomes.entrySet()) {
+            int live = e.getKey();
+            int fin = live >= 0 && live < liveToFinal.length ? liveToFinal[live] : live;
+            if (fin >= 0 && !nomes.containsKey(fin)) {
+                nomes.put(fin, e.getValue());
             }
         }
-        for (TranscriptTurn t : turns) {
-            if (t.provisional || t.text == null || t.text.isBlank()) {
-                continue;
-            }
-            Recording.Turno turno = new Recording.Turno();
-            turno.falante = Math.max(0, t.speaker);
-            turno.inicioMs = t.startMs;
-            turno.fimMs = t.endMs;
-            turno.texto = t.text;
-            r.turnos.add(turno);
-            r.falante(turno.falante);
-        }
-        r.transcricaoDisponivel = pipeline.hasAsr() && r.temTexto();
+        fillTranscript(r, pipeline, turns, nomes, new java.util.HashMap<>(), extras.insights);
 
         // The user's own voice, learnt on a previous review, becomes "Você".
-        int me = new VoicePrints(context).match(extras.userId, profiles);
+        int me = new VoicePrints(context).match(extras.userId, pipeline.speakerProfiles());
         if (me >= 0) {
             Recording.Falante f = r.falante(me);
             if (f.nome == null || f.nome.isBlank()) {
@@ -96,10 +83,6 @@ public final class RecordingFinalizer {
         }
 
         labelMarkers(r, extras.marcadores, pipeline.words());
-
-        if (extras.insights != null && r.temTexto()) {
-            r.analiseLocal = extras.insights.analyseNow(turns);
-        }
         store.save(r);
 
         File wav = new File(dir, RecordingStore.WAV);
@@ -128,6 +111,46 @@ public final class RecordingFinalizer {
             m4a.delete();
         }
         return r;
+    }
+
+    /**
+     * Replaces the speakers and turns of {@code r} with the pipeline's result.
+     * {@code nomes}/{@code papeis} are applied by final speaker index (used to keep
+     * what the user already typed when a recording is transcribed again).
+     */
+    public static void fillTranscript(Recording r, AudioPipeline pipeline, List<TranscriptTurn> turns,
+                                      Map<Integer, String> nomes, Map<Integer, String> papeis,
+                                      @Nullable LiveInsights insights) {
+        r.falantes.clear();
+        r.turnos.clear();
+        int speakers = Math.max(pipeline.speakerCount(), 0);
+        long[] talk = pipeline.snapshot().talkTimeMs;
+        List<SpeakerProfile> profiles = pipeline.speakerProfiles();
+        for (int i = 0; i < speakers; i++) {
+            Recording.Falante f = r.falante(i);
+            f.tempoFalaMs = i < talk.length ? talk[i] : 0;
+            f.nome = nomes.get(i);
+            f.papel = papeis.get(i);
+            if (i < profiles.size()) {
+                f.voz = profiles.get(i).export();
+            }
+        }
+        for (TranscriptTurn t : turns) {
+            if (t.provisional || t.text == null || t.text.isBlank()) {
+                continue;
+            }
+            Recording.Turno turno = new Recording.Turno();
+            turno.falante = Math.max(0, t.speaker);
+            turno.inicioMs = t.startMs;
+            turno.fimMs = t.endMs;
+            turno.texto = t.text;
+            r.turnos.add(turno);
+            r.falante(turno.falante);
+        }
+        r.transcricaoDisponivel = pipeline.hasAsr() && r.temTexto();
+        if (insights != null && r.temTexto()) {
+            r.analiseLocal = insights.analyseNow(turns);
+        }
     }
 
     /** Markers flagged without a label get the words spoken in the seconds after the flag. */

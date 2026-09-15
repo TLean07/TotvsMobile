@@ -7,7 +7,8 @@ package com.tlean07.totvs.audio.dsp;
  */
 public final class SpeakerProfile {
 
-    public static final int MFCC_DIMS = FrameFeatures.MFCC_COUNT - 1;
+    /** c1..c12 – fixed so exported voiceprints stay compatible. */
+    public static final int MFCC_DIMS = 12;
 
     /** Weight of the pitch term against the timbre (MFCC) term in the distance. */
     private static final float PITCH_WEIGHT = 0.35f;
@@ -34,6 +35,22 @@ public final class SpeakerProfile {
         } else {
             for (int i = 0; i < MFCC_DIMS; i++) {
                 unvoicedSum[i] += f.mfcc[i + 1];
+            }
+            unvoicedFrames++;
+        }
+    }
+
+    /** Adds one frame from raw values: MFCC c1..c12 and log2 pitch (NaN when unvoiced). */
+    public void addRaw(float[] mfcc1to12, float pitchOctaves) {
+        if (!Float.isNaN(pitchOctaves)) {
+            for (int i = 0; i < MFCC_DIMS; i++) {
+                mfccSum[i] += mfcc1to12[i];
+            }
+            pitchSum += pitchOctaves;
+            voicedFrames++;
+        } else {
+            for (int i = 0; i < MFCC_DIMS; i++) {
+                unvoicedSum[i] += mfcc1to12[i];
             }
             unvoicedFrames++;
         }

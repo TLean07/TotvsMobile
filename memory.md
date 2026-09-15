@@ -280,3 +280,29 @@ Facts learned while tuning (TTS dialogues Antonio/Francisca/Duarte/Thalita via e
 - `Pattern.UNICODE_CHARACTER_CLASS` não existe no Android (IllegalArgumentException no <clinit> do
   `LeanIALocalAnalyzer`, derrubava o app ao iniciar a gravação). Trocado por `[\p{L}\p{Nd}_]+`; teste
   `LeanIALocalAnalyzerTest` cobre o initializer.
+
+## Diarização offline nova + transcrever depois (2026-09-15, noite)
+- Usuário relatou no S25 Ultra: "tudo cai como Pessoa 1" e "Enviar para análise" desabilitado. Causas:
+  (1) o algoritmo ao vivo (limiar fixo de distância entre centróides) não separa vozes parecidas em
+  sala com reverberação/celular na mesa; (2) o botão só habilita com texto, e a gravação não tinha
+  texto porque o modelo Vosk nunca foi baixado no aparelho (não há erro, só fica sem ASR).
+- `dsp/OfflineDiarizer` (+ `GaussianStats`, `FrameStore`): segunda passada no fim da gravação.
+  CMVN sobre a gravação inteira; vetor = 12 MFCC + log-pitch + energia (c0); só frames vozeados;
+  peças = falas ao vivo cortadas por teste de duas gaussianas; para K = 1, 2, 3… inicializa
+  (dendrograma + sementes farthest-first), reatribui peças inteiras às vozes, e aceita K enquanto
+  todo par de vozes passa o teste `ganho > P/2 + 2,6·n_eff` (n_eff = n1·n2/(n1+n2)); "resgate de
+  órfãos" para quem só fala frases curtas; Viterbi por janelas de 0,5 s com custo de troca; vozes
+  < 1,5 s absorvidas; `liveToFinal` para os nomes digitados ao vivo seguirem a pessoa certa.
+- Corpus de teste: `scratchpad/tts/dialogo_*.wav` + versões `_fone`/`_sala` (degradar.py: reverb,
+  falante longe −9/−12 dB, ruído rosa, AGC). Harness `scratchpad/harness/sweep.ps1` (-D props).
+  Média 89,8 % de acerto 1:1 (antes: 55–80 % nos degradados; dois homens em sala 55 % → 99 %).
+  Limite conhecido: duas vozes masculinas de mesmo pitch com uma delas longe ainda podem colar.
+- Peças curtas (n_eff < 60) são indecidíveis (pares de vozes diferentes se sobrepõem aos pares da
+  mesma voz); por isso as decisões só usam peças naturais ≥ 80 frames e agrupamentos inteiros —
+  partições otimizadas por Viterbi inflam o ganho (≈3,6/n_eff) e não servem para decidir K.
+- Revisão: "Transcrever agora" (baixa o modelo se preciso e roda `FileTranscriber.retranscribe`
+  sobre o áudio guardado, mantendo nomes/papéis por índice); dica explica por que não há texto.
+  Gravador: antes de gravar sem modelo, pergunta "Baixar e gravar / Gravar sem transcrição".
+- R8 + Vosk/JNA confirmado funcionando no emulador via importação de WAV
+  (`am start ImportarAudioActivity --es uri file:///data/data/<pkg>/files/x.wav`, exportada no
+  manifest de debug; arquivo copiado com `run-as`).

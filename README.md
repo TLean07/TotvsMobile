@@ -55,6 +55,10 @@ mobile com **biometria**, **armazenamento via Android Keystore** e **vínculo de
   por falante, edição de nomes/papéis/falas e envio para a análise da LeanIA no formato `[LOCUTOR N]:`
 - **Importar áudio existente** — Qualquer gravação (.wav/.m4a/.mp3/.ogg) passa pelo mesmo
   reconhecimento de falantes e transcrição no celular; opção de mandar o áudio para o servidor
+- **Quem falou, de verdade** — Ao terminar, a gravação inteira é reagrupada por voz (normalização
+  da sala, teste estatístico de "uma voz ou duas", número de pessoas decidido pelos dados, resgate de
+  quem só responde curto); nomes digitados ao vivo seguem a pessoa certa. "Transcrever agora" na
+  revisão para gravações feitas sem o modelo de voz instalado
 - **Análise ao vivo (LeanIA no celular)** — Enquanto grava, a mesma LeanIA do backend roda offline e mostra
   riscos, oportunidades, concorrentes, budget e próxima ação em tempo real; a prévia fica na revisão
 - **Gravador completo** — Nomear pessoas durante a gravação, reconhecimento automático da própria voz

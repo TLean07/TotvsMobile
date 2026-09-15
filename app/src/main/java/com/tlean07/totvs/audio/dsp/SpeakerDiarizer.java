@@ -72,7 +72,11 @@ public final class SpeakerDiarizer implements FeatureExtractor.Listener {
     private final List<SpeakerSegment> segments = new ArrayList<>();
     /** Voice fingerprint of every committed segment, parallel to {@link #segments}. */
     private final List<SpeakerProfile> segmentProfiles = new ArrayList<>();
+    /** Every speech frame of the recording plus, per committed segment, its frame range. */
+    private final FrameStore frames = new FrameStore();
+    private final List<int[]> segmentFrames = new ArrayList<>();
     private int speakerCountAfterRefine = -1;
+    private OfflineDiarizer.Result refined;
 
     private final List<FrameFeatures> current = new ArrayList<>();
     private boolean open;
@@ -292,158 +296,55 @@ public final class SpeakerDiarizer implements FeatureExtractor.Listener {
         SpeakerSegment segment = new SpeakerSegment(startMs, endMs, d.speaker, false, d.distance);
         segments.add(segment);
         segmentProfiles.add(profile);
+        int first = this.frames.size();
+        for (FrameFeatures f : frames) {
+            this.frames.add(f);
+        }
+        segmentFrames.add(new int[] {first, this.frames.size()});
         listener.onSegment(segment, d.created);
     }
 
-    /** Centroids closer than this after the whole recording are the same person. */
-    private static final float REFINE_MERGE_DISTANCE = 0.95f;
-    /** Small preference for keeping the previous segment's speaker on ambiguous short segments. */
-    private static final float REFINE_CONTINUITY_BONUS = 0.15f;
-    private static final int REFINE_RELIABLE_VOICED = 25;
-    /** Segments with fewer voiced frames than this (~0.3 s of voice) follow a touching neighbour. */
-    private static final int REFINE_BLIP_MAX_VOICED = 20;
-    private static final long REFINE_BLIP_GAP_MS = 400;
-    /** Speakers with less speech than this at the end are merged into their nearest voice. */
-    private static final long REFINE_MIN_SPEAKER_MS = 1_500;
-
     /**
-     * Second pass once the recording is over. The live labels are decided with
-     * whatever was heard so far – the first sentence of a new voice can only be
-     * attributed after that voice exists – so at the end every segment is
-     * re-matched against the final voice models, near-duplicate voices are
-     * merged, negligible ones are absorbed and speakers are renumbered in order
-     * of first appearance. Returns the relabelled segments (also kept internally).
+     * Second pass once the recording is over: re-clusters every speech frame
+     * with {@link OfflineDiarizer} (normalisation, BIC segmentation/clustering,
+     * Viterbi resegmentation), absorbs negligible voices and renumbers speakers
+     * in order of first appearance. Returns the relabelled segments (also kept
+     * internally).
      */
     public List<SpeakerSegment> refine() {
-        int n = clusterer.speakerCount();
-        if (n == 0 || segments.isEmpty()) {
+        if (segments.isEmpty()) {
             return segments();
         }
-        SpeakerProfile[] centroids = new SpeakerProfile[n];
-        for (int i = 0; i < n; i++) {
-            centroids[i] = new SpeakerProfile();
-        }
+        int[] from = new int[segments.size()];
+        int[] to = new int[segments.size()];
         for (int i = 0; i < segments.size(); i++) {
-            SpeakerProfile p = segmentProfiles.get(i);
-            if (p.voicedFrames() >= REFINE_RELIABLE_VOICED) {
-                centroids[segments.get(i).speaker].addAll(p);
-            }
+            from[i] = segmentFrames.get(i)[0];
+            to[i] = segmentFrames.get(i)[1];
         }
-        for (int i = 0; i < n; i++) {
-            if (centroids[i].frames() == 0) {
-                centroids[i].addAll(clusterer.centroid(i));
-            }
-        }
-        boolean[] alive = new boolean[n];
-        java.util.Arrays.fill(alive, true);
-        // 1. Merge voices that ended up nearly identical.
-        boolean merged = true;
-        while (merged) {
-            merged = false;
-            float best = Float.MAX_VALUE;
-            int a = -1;
-            int b = -1;
-            for (int i = 0; i < n; i++) {
-                for (int j = i + 1; j < n; j++) {
-                    if (alive[i] && alive[j]) {
-                        float d = centroids[i].distanceTo(centroids[j]);
-                        if (d < best) {
-                            best = d;
-                            a = i;
-                            b = j;
-                        }
-                    }
-                }
-            }
-            if (a >= 0 && best < REFINE_MERGE_DISTANCE) {
-                centroids[a].addAll(centroids[b]);
-                alive[b] = false;
-                merged = true;
-            }
-        }
-        // 2. Re-attribute every segment to the closest final voice.
-        int[] label = new int[segments.size()];
-        long[] speech = new long[n];
-        for (int pass = 0; pass < 2; pass++) {
-            java.util.Arrays.fill(speech, 0);
-            int previous = -1;
-            for (int i = 0; i < segments.size(); i++) {
-                SpeakerProfile p = segmentProfiles.get(i);
-                int best = -1;
-                float bestScore = Float.MAX_VALUE;
-                for (int s = 0; s < n; s++) {
-                    if (!alive[s]) {
-                        continue;
-                    }
-                    float score = p.distanceTo(centroids[s]);
-                    if (s == previous) {
-                        score -= REFINE_CONTINUITY_BONUS;
-                    }
-                    if (score < bestScore) {
-                        bestScore = score;
-                        best = s;
-                    }
-                }
-                label[i] = best;
-                previous = best;
-            }
-            // A one-word blip glued to a longer utterance (< 400 ms gap) carries too
-            // little voice to judge on its own: it belongs to the neighbour it touches.
-            for (int i = 0; i < segments.size(); i++) {
-                if (segmentProfiles.get(i).voicedFrames() >= REFINE_BLIP_MAX_VOICED) {
-                    continue;
-                }
-                SpeakerSegment seg = segments.get(i);
-                int prev = i > 0 && seg.startMs - segments.get(i - 1).endMs <= REFINE_BLIP_GAP_MS
-                        && segmentProfiles.get(i - 1).voicedFrames() >= REFINE_BLIP_MAX_VOICED ? label[i - 1] : -1;
-                int next = i + 1 < segments.size() && segments.get(i + 1).startMs - seg.endMs <= REFINE_BLIP_GAP_MS
-                        && segmentProfiles.get(i + 1).voicedFrames() >= REFINE_BLIP_MAX_VOICED ? label[i + 1] : -1;
-                if (prev >= 0 && next >= 0 && prev != next) {
-                    SpeakerProfile p = segmentProfiles.get(i);
-                    label[i] = p.distanceTo(centroids[prev]) <= p.distanceTo(centroids[next]) ? prev : next;
-                } else if (prev >= 0) {
-                    label[i] = prev;
-                } else if (next >= 0) {
-                    label[i] = next;
-                }
-            }
-            for (int i = 0; i < segments.size(); i++) {
-                speech[label[i]] += segments.get(i).durationMs();
-            }
-            // 3. Absorb speakers that barely spoke (a cough, a single "sim").
-            boolean dropped = false;
-            for (int s = 0; s < n; s++) {
-                if (alive[s] && speech[s] < REFINE_MIN_SPEAKER_MS && countAlive(alive) > 1) {
-                    alive[s] = false;
-                    dropped = true;
-                }
-            }
-            if (!dropped) {
-                break;
-            }
-        }
-        // 4. Renumber by first appearance.
-        int[] renumber = new int[n];
-        java.util.Arrays.fill(renumber, -1);
-        int next = 0;
-        List<SpeakerSegment> out = new ArrayList<>(segments.size());
-        for (int i = 0; i < segments.size(); i++) {
-            int s = label[i];
-            if (renumber[s] < 0) {
-                renumber[s] = next++;
-            }
-            SpeakerSegment old = segments.get(i);
-            float d = segmentProfiles.get(i).distanceTo(centroids[s]);
-            out.add(new SpeakerSegment(old.startMs, old.endMs, renumber[s], false, d));
-        }
+        refined = new OfflineDiarizer(frames, new ArrayList<>(segments), from, to, clusterer.speakerCount()).run();
         segments.clear();
-        segments.addAll(out);
-        speakerCountAfterRefine = next;
+        segments.addAll(refined.segments);
+        speakerCountAfterRefine = refined.speakers;
         return segments();
+    }
+
+    /** After {@link #refine()}: final index of each live speaker label (-1 if that voice vanished). */
+    public int[] liveToFinal() {
+        if (refined != null) {
+            return refined.liveToFinal;
+        }
+        int[] identity = new int[Math.max(1, clusterer.speakerCount())];
+        for (int i = 0; i < identity.length; i++) {
+            identity[i] = i;
+        }
+        return identity;
     }
 
     /** One aggregated voice profile per speaker index (labels as currently held, i.e. after refine()). */
     public List<SpeakerProfile> speakerProfiles() {
+        if (refined != null) {
+            return refined.profiles;
+        }
         int n = speakerCount();
         List<SpeakerProfile> out = new ArrayList<>();
         for (int i = 0; i < n; i++) {
@@ -456,16 +357,6 @@ public final class SpeakerDiarizer implements FeatureExtractor.Listener {
             }
         }
         return out;
-    }
-
-    private static int countAlive(boolean[] alive) {
-        int c = 0;
-        for (boolean b : alive) {
-            if (b) {
-                c++;
-            }
-        }
-        return c;
     }
 
     private static SpeakerProfile profileOf(List<FrameFeatures> frames, int from, int to) {

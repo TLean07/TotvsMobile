@@ -100,6 +100,7 @@ public class RevisaoActivity extends AppCompatActivity {
         binding.revTimeline.setOnSeek(this::seekTo);
         binding.revSendText.setOnClickListener(v -> sendText());
         binding.revSendAudio.setOnClickListener(v -> sendAudio());
+        binding.revTranscribe.setOnClickListener(v -> transcribeNow());
 
         String id = getIntent().getStringExtra(EXTRA_ID);
         AppExecutors.io(() -> {
@@ -142,6 +143,11 @@ public class RevisaoActivity extends AppCompatActivity {
             store.releaseAudio(rec);
         }
         super.onDestroy();
+        dismissProgress();
+        if (modelListener != null) {
+            com.tlean07.totvs.audio.asr.VoskModelManager.get(this).removeListener(modelListener);
+            modelListener = null;
+        }
     }
 
     // --- rendering ---
@@ -173,9 +179,138 @@ public class RevisaoActivity extends AppCompatActivity {
         adapter.submit(rec.turns());
         boolean hasText = rec.temTexto();
         binding.revTranscript.setVisibility(hasText ? View.VISIBLE : View.GONE);
-        binding.revTranscriptHint.setText(hasText ? R.string.rev_transcript_hint : R.string.rev_transcript_none);
+        if (hasText) {
+            binding.revTranscriptHint.setText(R.string.rev_transcript_hint);
+        } else if (rec.modeloAsr == null) {
+            binding.revTranscriptHint.setText(getString(R.string.rev_transcript_none_model,
+                    com.tlean07.totvs.audio.asr.VoskModelManager.MODEL_SIZE_MB));
+        } else {
+            binding.revTranscriptHint.setText(R.string.rev_transcript_none_empty);
+        }
+        binding.revTranscribe.setVisibility(hasText ? View.GONE : View.VISIBLE);
         binding.revSendText.setEnabled(hasText);
         binding.revSendText.setAlpha(hasText ? 1f : 0.5f);
+    }
+
+    // --- transcribe again (voice model missing at recording time, or no text captured) ---
+
+    @Nullable
+    private com.tlean07.totvs.audio.asr.VoskModelManager.Listener modelListener;
+    @Nullable
+    private AlertDialog progressDialog;
+
+    private void transcribeNow() {
+        if (rec == null || transcribing) {
+            return;
+        }
+        com.tlean07.totvs.audio.asr.VoskModelManager models = com.tlean07.totvs.audio.asr.VoskModelManager.get(this);
+        if (models.isReady()) {
+            runRetranscribe();
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.rev_model_prompt_title)
+                .setMessage(getString(R.string.rev_model_prompt_message, com.tlean07.totvs.audio.asr.VoskModelManager.MODEL_SIZE_MB))
+                .setPositiveButton(R.string.rev_model_prompt_download, (d, w) -> downloadThenRetranscribe(models))
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private boolean transcribing;
+
+    private void downloadThenRetranscribe(com.tlean07.totvs.audio.asr.VoskModelManager models) {
+        showProgress(getString(R.string.rev_transcribe_download, 0));
+        modelListener = (status, progress, message) -> {
+            switch (status) {
+                case DOWNLOADING:
+                    updateProgress(getString(R.string.rev_transcribe_download, Math.max(0, progress)));
+                    break;
+                case UNPACKING:
+                    updateProgress(getString(R.string.grav_asr_unpacking));
+                    break;
+                case READY:
+                    detachModelListener(models);
+                    runRetranscribe();
+                    break;
+                case ERROR:
+                    detachModelListener(models);
+                    dismissProgress();
+                    Toast.makeText(this, getString(R.string.rev_transcribe_failed,
+                            message != null ? message : getString(R.string.error_generic)), Toast.LENGTH_LONG).show();
+                    break;
+                default:
+                    break;
+            }
+        };
+        models.addListener(modelListener);
+        if (models.status() != com.tlean07.totvs.audio.asr.VoskModelManager.Status.DOWNLOADING
+                && models.status() != com.tlean07.totvs.audio.asr.VoskModelManager.Status.UNPACKING) {
+            models.download();
+        }
+    }
+
+    private void detachModelListener(com.tlean07.totvs.audio.asr.VoskModelManager models) {
+        if (modelListener != null) {
+            models.removeListener(modelListener);
+            modelListener = null;
+        }
+    }
+
+    private void runRetranscribe() {
+        if (rec == null || transcribing) {
+            return;
+        }
+        transcribing = true;
+        readForm();
+        showProgress(getString(R.string.rev_transcribing, 0));
+        com.tlean07.totvs.audio.FileTranscriber.retranscribe(this, rec, new com.tlean07.totvs.audio.FileTranscriber.Listener() {
+            @Override
+            public void onProgress(int phase, int percent) {
+                updateProgress(getString(R.string.rev_transcribing, phase == 0 ? percent / 2 : 50 + percent / 2));
+            }
+
+            @Override
+            public void onDone(Recording recording) {
+                transcribing = false;
+                dismissProgress();
+                if (binding == null) {
+                    return;
+                }
+                rec = recording;
+                render();
+                Toast.makeText(RevisaoActivity.this, R.string.rev_transcribe_done, Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onError(String message) {
+                transcribing = false;
+                dismissProgress();
+                if (binding != null) {
+                    Toast.makeText(RevisaoActivity.this, getString(R.string.rev_transcribe_failed, message), Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+    }
+
+    private void showProgress(String text) {
+        dismissProgress();
+        progressDialog = new AlertDialog.Builder(this)
+                .setMessage(text)
+                .setCancelable(false)
+                .show();
+    }
+
+    private void updateProgress(String text) {
+        if (progressDialog != null && progressDialog.isShowing()) {
+            progressDialog.setMessage(text);
+        }
+    }
+
+    private void dismissProgress() {
+        if (progressDialog != null) {
+            progressDialog.dismiss();
+            progressDialog = null;
+        }
     }
 
     private void renderSpeakers() {

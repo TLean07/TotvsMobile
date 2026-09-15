@@ -244,6 +244,11 @@ public final class AudioPipeline {
         return diarizer.speakerProfiles();
     }
 
+    /** Final speaker index for each label shown live (names typed during the recording follow it). */
+    public int[] liveToFinal() {
+        return diarizer.liveToFinal();
+    }
+
     /** Every recognised word so far (for auto-labelling markers). */
     public List<TranscriptWord> words() {
         synchronized (lock) {

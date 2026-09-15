@@ -98,6 +98,77 @@ public final class FileTranscriber {
         });
     }
 
+    /**
+     * Runs the stored audio of an existing recording through the pipeline again
+     * (e.g. the voice model was not installed when it was recorded) and replaces
+     * its speakers and transcript in place, keeping the names and roles already
+     * typed by their speaker index.
+     */
+    public static void retranscribe(Context context, Recording existing, Listener listener) {
+        Context app = context.getApplicationContext();
+        AppExecutors.io(() -> {
+            RecordingStore store = new RecordingStore(app);
+            File scratch = new File(new File(app.getCacheDir(), "retranscribe"), existing.id);
+            try {
+                if (!scratch.isDirectory() && !scratch.mkdirs()) {
+                    throw new IOException("cache indisponível");
+                }
+                VoskModelManager models = VoskModelManager.get(app);
+                if (!models.isReady()) {
+                    throw new IOException("O modelo de voz não está instalado.");
+                }
+                File audio = store.audioFile(existing);
+                if (audio == null || !audio.exists() || audio.length() == 0) {
+                    throw new IOException("O áudio desta gravação não foi encontrado.");
+                }
+                AudioPipeline pipeline = new AudioPipeline(new File(scratch, RecordingStore.WAV), new AudioPipeline.Listener() {
+                    @Override
+                    public void onSnapshot(AudioPipeline.Snapshot snapshot) {
+                    }
+
+                    @Override
+                    public void onLevel(float dbfs, long positionMs) {
+                    }
+                });
+                TranscriptionEngine asr = new VoskEngine(models.load(), VoskModelManager.MODEL_LABEL, pipeline.asrListener());
+                pipeline.attachAsr(asr);
+                AudioFileDecoder.decode(app, Uri.fromFile(audio), scratch, pipeline::feed,
+                        pct -> AppExecutors.main(() -> listener.onProgress(0, pct)));
+                AppExecutors.main(() -> listener.onProgress(1, 0));
+                List<TranscriptTurn> turns = pipeline.finish();
+                java.util.Map<Integer, String> nomes = new java.util.HashMap<>();
+                java.util.Map<Integer, String> papeis = new java.util.HashMap<>();
+                for (Recording.Falante f : existing.falantes) {
+                    if (f.nome != null && !f.nome.isBlank()) {
+                        nomes.put(f.indice, f.nome);
+                    }
+                    if (f.papel != null && !f.papel.isBlank()) {
+                        papeis.put(f.indice, f.papel);
+                    }
+                }
+                LiveInsights insights = new LiveInsights((a, b) -> { });
+                RecordingFinalizer.fillTranscript(existing, pipeline, turns, nomes, papeis, insights);
+                insights.close();
+                existing.modeloAsr = VoskModelManager.MODEL_LABEL;
+                if (existing.duracaoMs <= 0) {
+                    existing.duracaoMs = pipeline.positionMs();
+                }
+                store.save(existing);
+                com.tlean07.totvs.security.AuditLog.get(app).record("gravacao.retranscrita", existing.id);
+                AppExecutors.main(() -> {
+                    listener.onProgress(2, 100);
+                    listener.onDone(existing);
+                });
+            } catch (Exception e) {
+                Logger.e(TAG, "nova transcrição falhou", e);
+                String msg = e.getMessage() != null ? e.getMessage() : "Não foi possível transcrever o áudio.";
+                AppExecutors.main(() -> listener.onError(msg));
+            } finally {
+                RecordingStore.deleteRecursively(scratch);
+            }
+        });
+    }
+
     private static String stripExtension(String name) {
         int dot = name.lastIndexOf('.');
         return dot > 0 ? name.substring(0, dot) : name;

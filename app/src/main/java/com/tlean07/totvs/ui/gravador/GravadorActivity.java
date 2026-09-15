@@ -154,7 +154,7 @@ public class GravadorActivity extends AppCompatActivity implements RecorderSessi
     private void onMainButton() {
         if (session == null || !session.isActive()) {
             if (settings.consentAccepted()) {
-                ensurePermissionsThenStart();
+                startWithModelCheck();
             } else {
                 showConsent();
             }
@@ -187,10 +187,38 @@ public class GravadorActivity extends AppCompatActivity implements RecorderSessi
                     if (remember.isChecked()) {
                         settings.setConsentAccepted(true);
                     }
-                    ensurePermissionsThenStart();
+                    startWithModelCheck();
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();
+    }
+
+    private boolean startAfterDownload;
+
+    /** Without the voice model the meeting is recorded but has no text: offer the download first. */
+    private void startWithModelCheck() {
+        switch (models.status()) {
+            case READY:
+                ensurePermissionsThenStart();
+                break;
+            case DOWNLOADING:
+            case UNPACKING:
+                startAfterDownload = true;
+                Toast.makeText(this, R.string.grav_model_wait, Toast.LENGTH_SHORT).show();
+                break;
+            default:
+                new AlertDialog.Builder(this)
+                        .setTitle(R.string.grav_model_prompt_title)
+                        .setMessage(getString(R.string.grav_model_prompt_message, VoskModelManager.MODEL_SIZE_MB))
+                        .setPositiveButton(R.string.grav_model_prompt_download, (d, w) -> {
+                            startAfterDownload = true;
+                            models.download();
+                        })
+                        .setNegativeButton(R.string.grav_model_prompt_skip, (d, w) -> ensurePermissionsThenStart())
+                        .setNeutralButton(R.string.cancel, null)
+                        .show();
+                break;
+        }
     }
 
     private void ensurePermissionsThenStart() {
@@ -504,6 +532,12 @@ public class GravadorActivity extends AppCompatActivity implements RecorderSessi
             case READY:
                 binding.gravAsrText.setText(R.string.grav_asr_ready);
                 binding.gravAsrButton.setVisibility(View.GONE);
+                if (startAfterDownload) {
+                    startAfterDownload = false;
+                    if (session == null || !session.isActive()) {
+                        ensurePermissionsThenStart();
+                    }
+                }
                 break;
             case DOWNLOADING:
                 binding.gravAsrText.setText(getString(R.string.grav_asr_downloading, Math.max(progress, 0)));
@@ -516,6 +550,7 @@ public class GravadorActivity extends AppCompatActivity implements RecorderSessi
                 binding.gravAsrButton.setVisibility(View.GONE);
                 break;
             default:
+                startAfterDownload = false;
                 binding.gravAsrText.setText(message != null ? message
                         : getString(R.string.grav_asr_absent, VoskModelManager.MODEL_SIZE_MB));
                 binding.gravAsrButton.setVisibility(View.VISIBLE);
