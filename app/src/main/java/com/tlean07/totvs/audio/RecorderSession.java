@@ -228,6 +228,22 @@ public final class RecorderSession {
 
     private final AudioPipeline.Listener pipelineListener = new AudioPipeline.Listener() {
         @Override
+        public void onSpeakersRemapped(int[] oldToNew) {
+            AppExecutors.main(() -> {
+                Map<Integer, String> moved = new HashMap<>();
+                for (Map.Entry<Integer, String> e : new ArrayList<>(nomes.entrySet())) {
+                    int old = e.getKey();
+                    int neu = old >= 0 && old < oldToNew.length ? oldToNew[old] : -1;
+                    if (neu >= 0 && !moved.containsKey(neu)) {
+                        moved.put(neu, e.getValue());
+                    }
+                }
+                nomes.clear();
+                nomes.putAll(moved);
+            });
+        }
+
+        @Override
         public void onSnapshot(AudioPipeline.Snapshot snapshot) {
             lastSnapshot = snapshot;
             if (insights != null) {

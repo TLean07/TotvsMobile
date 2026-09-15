@@ -306,3 +306,11 @@ Facts learned while tuning (TTS dialogues Antonio/Francisca/Duarte/Thalita via e
 - R8 + Vosk/JNA confirmado funcionando no emulador via importação de WAV
   (`am start ImportarAudioActivity --es uri file:///data/data/<pkg>/files/x.wav`, exportada no
   manifest de debug; arquivo copiado com `run-as`).
+- Prévia ao vivo: a cada ~12 s de áudio (e ao pausar) o `AudioPipeline` roda o `OfflineDiarizer`
+  em segundo plano sobre uma cópia dos frames (`FrameStore.copy`, `SpeakerDiarizer.capturePreview`)
+  e a tela do gravador adota os rótulos (mapa live→exibido; nomes digitados são remapeados por
+  sobreposição via `Listener.onSpeakersRemapped`). No fim, `displayedToFinal` leva os nomes ao
+  resultado final. A prévia para após 45 min de áudio; a passada final continua sempre.
+- Gravações curtas (teste de 15 s): mínimos de voz/peça escalam com a fala total (15 %/8 %, piso
+  40 frames) e os rótulos ao vivo entram como candidato de inicialização. Corpus curto
+  (`dialogo_curto_*`): mulher+homem e troca rápida OK; dois homens de mesmo tom em 15 s ainda vira 1.

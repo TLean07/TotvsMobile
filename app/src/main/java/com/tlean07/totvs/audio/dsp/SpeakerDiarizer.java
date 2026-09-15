@@ -328,6 +328,44 @@ public final class SpeakerDiarizer implements FeatureExtractor.Listener {
         return segments();
     }
 
+    /** Everything a background preview needs, copied on the audio thread. */
+    public static final class PreviewInput {
+        final FrameStore frames;
+        final List<SpeakerSegment> segments;
+        final int[] from;
+        final int[] to;
+        final int liveSpeakers;
+
+        PreviewInput(FrameStore frames, List<SpeakerSegment> segments, int[] from, int[] to, int liveSpeakers) {
+            this.frames = frames;
+            this.segments = segments;
+            this.from = from;
+            this.to = to;
+            this.liveSpeakers = liveSpeakers;
+        }
+
+        public int segmentCount() {
+            return segments.size();
+        }
+    }
+
+    /** Audio thread: snapshot of the committed segments and their frames for {@link #runPreview}. */
+    public PreviewInput capturePreview() {
+        int n = segments.size();
+        int[] from = new int[n];
+        int[] to = new int[n];
+        for (int i = 0; i < n; i++) {
+            from[i] = segmentFrames.get(i)[0];
+            to[i] = segmentFrames.get(i)[1];
+        }
+        return new PreviewInput(frames.copy(), new ArrayList<>(segments), from, to, clusterer.speakerCount());
+    }
+
+    /** Any thread: the offline pass over a preview snapshot (does not touch the live state). */
+    public static OfflineDiarizer.Result runPreview(PreviewInput in) {
+        return new OfflineDiarizer(in.frames, in.segments, in.from, in.to, in.liveSpeakers).run();
+    }
+
     /** After {@link #refine()}: final index of each live speaker label (-1 if that voice vanished). */
     public int[] liveToFinal() {
         if (refined != null) {

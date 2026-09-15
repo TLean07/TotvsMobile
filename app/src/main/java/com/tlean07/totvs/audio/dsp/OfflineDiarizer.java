@@ -209,6 +209,12 @@ public final class OfflineDiarizer {
     }
 
     public Result run() {
+        synchronized (OfflineDiarizer.class) {
+            return runLocked();
+        }
+    }
+
+    private Result runLocked() {
         last = this;
         PITCH_DIM = MFCC_USED;
         ENERGY_DIM = USE_ENERGY ? MFCC_USED + 1 : -1;
@@ -250,10 +256,18 @@ public final class OfflineDiarizer {
                 }
             }
         }
+        // Minimum sizes scale with how much speech there is: a 15 s test with two people
+        // has voices of ~100 frames, an hour-long meeting can afford stricter minimums.
+        int usableTotal = 0;
+        for (GaussianStats g : pieceStats) {
+            usableTotal += g.n;
+        }
+        minVoice = (int) Math.max(40, Math.min(MIN_VOICE_FRAMES, Math.round(0.15 * usableTotal)));
+        minCluster = (int) Math.max(40, Math.min(MIN_CLUSTER_FRAMES, Math.round(0.08 * usableTotal)));
         // 2. dendrogram over the pieces long enough to carry a voice
         List<Integer> longPieces = new ArrayList<>();
         for (int p = 0; p < pieces.size(); p++) {
-            if (pieceStats[p].n >= MIN_CLUSTER_FRAMES) {
+            if (pieceStats[p].n >= minCluster) {
                 longPieces.add(p);
             }
         }
@@ -298,6 +312,24 @@ public final class OfflineDiarizer {
                     inits.add(farthestFirst(pieceCost, byLength[r], k));
                 }
             }
+            if (k > 1) {
+                // the live pass already grouped these utterances; when it heard k voices, try its answer too
+                int[] fromLive = new int[longPieces.size()];
+                int[] map = new int[Math.max(1, liveSpeakers)];
+                Arrays.fill(map, -1);
+                int distinct = 0;
+                for (int i = 0; i < longPieces.size(); i++) {
+                    int sp = live.get(pieces.get(longPieces.get(i))[0]).speaker;
+                    sp = Math.max(0, Math.min(sp, map.length - 1));
+                    if (map[sp] < 0) {
+                        map[sp] = distinct++;
+                    }
+                    fromLive[i] = map[sp];
+                }
+                if (distinct == k) {
+                    inits.add(fromLive);
+                }
+            }
             int[] assign = null;
             double bestScore = Double.NEGATIVE_INFINITY;
             for (int[] candidate : inits) {
@@ -313,7 +345,7 @@ public final class OfflineDiarizer {
             List<GaussianStats> clusters = clustersOf(pieceStats, longPieces, assign, k);
             boolean valid = clusters.size() == k;
             for (GaussianStats g : clusters) {
-                if (g.n < MIN_VOICE_FRAMES) {
+                if (g.n < minVoice) {
                     valid = false;
                 }
             }
@@ -429,7 +461,7 @@ public final class OfflineDiarizer {
             if (SpeakerDiarizer.debug != null) {
                 SpeakerDiarizer.debug.append(String.format(Locale.ROOT, "  orphans=%d frames=%d%n", orphans.size(), orphanFrames));
             }
-            if (orphanFrames < MIN_VOICE_FRAMES || k0 >= MAX_SPEAKERS) {
+            if (orphanFrames < minVoice || k0 >= MAX_SPEAKERS) {
                 break;
             }
             List<Integer> extended = new ArrayList<>(longPieces);
@@ -444,7 +476,7 @@ public final class OfflineDiarizer {
             List<GaussianStats> clusters = clustersOf(pieceStats, extended, assign, k1);
             boolean valid = clusters.size() == k1;
             for (GaussianStats g : clusters) {
-                if (g.n < MIN_VOICE_FRAMES) {
+                if (g.n < minVoice) {
                     valid = false;
                 }
             }
@@ -583,6 +615,9 @@ public final class OfflineDiarizer {
         }
         return out;
     }
+
+    private int minVoice = MIN_VOICE_FRAMES;
+    private int minCluster = MIN_CLUSTER_FRAMES;
 
     /** mergeCostAt[alive] = cost of the merge that took the dendrogram from `alive` to `alive-1` clusters. */
     private double[] mergeCostAt;

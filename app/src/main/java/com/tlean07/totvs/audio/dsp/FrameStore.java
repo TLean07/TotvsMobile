@@ -20,7 +20,15 @@ public final class FrameStore {
         return size;
     }
 
-    public boolean add(FrameFeatures f) {
+    /** Snapshot for a background pass while the audio thread keeps adding frames. */
+    public synchronized FrameStore copy() {
+        FrameStore c = new FrameStore();
+        c.data = java.util.Arrays.copyOf(data, Math.max(STRIDE, size * STRIDE));
+        c.size = size;
+        return c;
+    }
+
+    public synchronized boolean add(FrameFeatures f) {
         if (size >= MAX_FRAMES) {
             return false;
         }
