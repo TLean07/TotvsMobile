@@ -265,7 +265,7 @@ Facts learned while tuning (TTS dialogues Antonio/Francisca/Duarte/Thalita via e
 - `AlertNotes` (comentário "tratado" local), `security/AuditLog` (jsonl, card na aba Segurança),
   `widget/ResumoWidget` (prefs alimentadas pelo dashboard/worker), `work/AlertasWorker` (15 min, canal
   "alertas", só notifica ids não vistos; primeira execução só aprende).
-- Ícone adaptativo próprio (balão + onda) e splash animado (AVD `splash_anim`). `splits.abi` gera APK por
+- Ícone e splash voltaram ao logo TOTVS original a pedido do usuário (2026-09-15, noite). `splits.abi` gera APK por
   ABI + universal; o emulador usa o x86_64.
 - Observado: com o backend lento, o token expirou no meio do carregamento paginado (401 "Nao autenticado");
   o loader tenta cada página 2x. O endpoint /transcricoes/cliente/{nome} com espaços precisa de

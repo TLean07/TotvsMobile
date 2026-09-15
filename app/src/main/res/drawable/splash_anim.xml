@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:drawable="@drawable/splash_icon_vector">
-    <target android:name="b1" android:animation="@animator/wave_bar_a" />
-    <target android:name="b2" android:animation="@animator/wave_bar_b" />
-    <target android:name="b3" android:animation="@animator/wave_bar_a" />
-    <target android:name="b4" android:animation="@animator/wave_bar_b" />
-    <target android:name="b5" android:animation="@animator/wave_bar_a" />
-</animated-vector>

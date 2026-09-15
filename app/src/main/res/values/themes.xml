@@ -28,8 +28,7 @@
     <!-- Splash (androidx core-splashscreen) -->
     <style name="Theme.TotvsMobile.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/totvs_primary</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_anim</item>
-        <item name="windowSplashScreenAnimationDuration">1000</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
         <item name="windowSplashScreenIconBackgroundColor">@color/totvs_primary</item>
         <item name="postSplashScreenTheme">@style/Theme.TotvsMobile.NoActionBar</item>
     </style>
