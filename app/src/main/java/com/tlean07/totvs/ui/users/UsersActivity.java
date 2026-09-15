@@ -109,6 +109,7 @@ public class UsersActivity extends AppCompatActivity {
         SheetCreateUserBinding sb = SheetCreateUserBinding.inflate(getLayoutInflater());
         BottomSheetDialog sheet = new BottomSheetDialog(this, R.style.Theme_Totvs_BottomSheet);
         sheet.setContentView(sb.getRoot());
+        SafeAreaHelper.keyboardAwareSheet(sheet, sb.getRoot());
 
         ArrayAdapter<String> roleAdapter = new ArrayAdapter<>(this,
                 android.R.layout.simple_list_item_1, new String[]{"Usuário", "Administrador"});

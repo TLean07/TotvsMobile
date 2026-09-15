@@ -84,6 +84,26 @@ public class DataRepository {
         cached(KEY_TRANSCRICAO + id, DEFAULT_TTL_MS, forceRefresh, api.transcricao(id), cb);
     }
 
+    public void feedbacks(String transcricaoId, Callback<List<com.tlean07.totvs.network.dto.AnaliseFeedbackResponse>> cb) {
+        Calls.execute(api.feedbacks(transcricaoId), cb);
+    }
+
+    public void registrarFeedback(String transcricaoId, boolean util, String ajuste,
+                                  Callback<com.tlean07.totvs.network.dto.AnaliseFeedbackResponse> cb) {
+        Calls.execute(api.registrarFeedback(transcricaoId,
+                new com.tlean07.totvs.network.dto.AnaliseFeedbackRequest(util, ajuste)), cb);
+    }
+
+    /** Re-queues a failed analysis; every derived view is invalidated. */
+    public void reprocessar(String transcricaoId, Callback<TranscricaoResponse> cb) {
+        Calls.execute(api.reprocessar(transcricaoId), result -> {
+            if (result.success) {
+                invalidateTranscricaoData();
+            }
+            cb.onResult(result);
+        });
+    }
+
     public void criarTranscricao(TranscricaoRequest request, Callback<TranscricaoResponse> cb) {
         Calls.execute(api.criarTranscricao(request), result -> {
             if (result.success) {
@@ -105,6 +125,28 @@ public class DataRepository {
             }
             cb.onResult(result);
         });
+    }
+
+    /** Uploads a recorded meeting for server-side transcription (Parakeet) + analysis. */
+    public void importarAudio(java.io.File audio, String cliente, String vendedor, String participantes,
+                              Callback<TranscricaoResponse> cb) {
+        String name = audio.getName().toLowerCase(java.util.Locale.ROOT);
+        String mime = name.endsWith(".m4a") ? "audio/mp4" : name.endsWith(".mp3") ? "audio/mpeg" : "audio/wav";
+        okhttp3.RequestBody body = okhttp3.RequestBody.create(audio, okhttp3.MediaType.parse(mime));
+        okhttp3.MultipartBody.Part part = okhttp3.MultipartBody.Part.createFormData("file", audio.getName(), body);
+        Calls.execute(api.importarAudio(part, textPart(cliente), textPart(vendedor), textPart(participantes)), result -> {
+            if (result.success) {
+                invalidateTranscricaoData();
+            }
+            cb.onResult(result);
+        });
+    }
+
+    private static okhttp3.RequestBody textPart(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return okhttp3.RequestBody.create(value, okhttp3.MediaType.parse("text/plain; charset=utf-8"));
     }
 
     // --- Alertas ---

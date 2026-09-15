@@ -1,6 +1,7 @@
 package com.tlean07.totvs.ui.ai;
 
 import android.content.ContentResolver;
+import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -29,7 +30,11 @@ import com.tlean07.totvs.network.DataRepository;
 import com.tlean07.totvs.network.dto.PageResponse;
 import com.tlean07.totvs.network.dto.TranscricaoRequest;
 import com.tlean07.totvs.network.dto.TranscricaoResponse;
+import com.tlean07.totvs.audio.store.RecordingStore;
 import com.tlean07.totvs.ui.components.TranscricaoAdapter;
+import com.tlean07.totvs.ui.gravador.GravacoesActivity;
+import com.tlean07.totvs.ui.gravador.GravadorActivity;
+import com.tlean07.totvs.ui.gravador.ImportarAudioActivity;
 import com.tlean07.totvs.util.AppExecutors;
 import com.tlean07.totvs.util.SafeAreaHelper;
 
@@ -53,6 +58,18 @@ public class AiFragment extends Fragment {
     // File picker for the TOTVS JSON import (same feature as the web app).
     private final ActivityResultLauncher<String[]> jsonPicker =
             registerForActivityResult(new ActivityResultContracts.OpenDocument(), this::onJsonPicked);
+
+    // Existing meeting audio → on-device transcription + speaker detection.
+    private final ActivityResultLauncher<String[]> audioPicker =
+            registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
+                if (uri != null) {
+                    if (createSheet != null && createSheet.isShowing()) {
+                        createSheet.dismiss();
+                    }
+                    startActivity(ImportarAudioActivity.intent(requireContext(), uri));
+                }
+            });
+    private boolean resumedBefore;
 
     @Nullable
     @Override
@@ -147,15 +164,7 @@ public class AiFragment extends Fragment {
     }
 
     private void showDetail(TranscricaoResponse t) {
-        String resumo = t.resumoExecutivo != null && !t.resumoExecutivo.isBlank()
-                ? t.resumoExecutivo
-                : "A análise ainda está sendo processada pela IA.";
-        String title = t.cliente != null && !t.cliente.isBlank() ? t.cliente : "Análise";
-        new AlertDialog.Builder(requireContext())
-                .setTitle(title)
-                .setMessage("Status: " + (t.status != null ? t.status : "-") + "\n\n" + resumo)
-                .setPositiveButton("Fechar", null)
-                .show();
+        startActivity(com.tlean07.totvs.ui.analise.AnaliseDetalheActivity.intent(requireContext(), t.id));
     }
 
     private void showCreateDialog() {
@@ -163,9 +172,21 @@ public class AiFragment extends Fragment {
                 SheetCreateTranscricaoBinding.inflate(getLayoutInflater());
         createSheet = new BottomSheetDialog(requireContext(), R.style.Theme_Totvs_BottomSheet);
         createSheet.setContentView(sb.getRoot());
+        SafeAreaHelper.keyboardAwareSheet(createSheet, sb.getRoot());
 
         sb.sheetImportJson.setOnClickListener(v ->
                 jsonPicker.launch(new String[]{"application/json", "application/octet-stream", "text/plain"}));
+        sb.sheetRecord.setOnClickListener(v -> {
+            createSheet.dismiss();
+            startActivity(new Intent(requireContext(), GravadorActivity.class));
+        });
+        sb.sheetImportAudio.setOnClickListener(v -> audioPicker.launch(GravacoesActivity.AUDIO_MIME_TYPES));
+        int gravacoes = new RecordingStore(requireContext()).count();
+        sb.sheetRecordings.setText(gravacoes > 0 ? getString(R.string.sheet_recordings, gravacoes) : getString(R.string.sheet_recordings_none));
+        sb.sheetRecordings.setOnClickListener(v -> {
+            createSheet.dismiss();
+            startActivity(GravacoesActivity.intent(requireContext()));
+        });
 
         sb.buttonAnalisar.setOnClickListener(v -> {
             String texto = sb.inputTexto.getText() == null ? "" : sb.inputTexto.getText().toString().trim();
@@ -285,6 +306,17 @@ public class AiFragment extends Fragment {
 
     private void hideState() {
         binding.aiState.setVisibility(View.GONE);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Coming back from the recorder/review: a send invalidated the cache, so this
+        // only hits the network when something actually changed.
+        if (resumedBefore && !loadingPage) {
+            loadFirstPage();
+        }
+        resumedBefore = true;
     }
 
     @Override

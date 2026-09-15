@@ -231,3 +231,18 @@ Facts learned while tuning (TTS dialogues Antonio/Francisca/Duarte/Thalita via e
   for screenshots; `app/src/debug/AndroidManifest.xml` exports Gravador/Gravacoes so `am start` works without login.
 - The first manifest write silently failed once — always confirm the merged manifest has the service, or the
   foreground service crashes with ActivityNotFound/ServiceNotFound.
+
+## Teclado + detalhe da análise (2026-09-15)
+- `SafeAreaHelper.keyboardAwareSheet(dialog, content)` / `applyImeInset(view)`: the MaterialComponents
+  BottomSheetDialog theme is NOT edge-to-edge, so its CoordinatorLayout consumes the insets and just gets
+  shorter; the helper watches the sheet view's height, expands the sheet and scrolls the focused field above
+  the keyboard by hand (requestRectangleOnScreen is useless there). Activities with inputs get
+  `applyImeInset` on the scroll container. Used by the "Nova análise" sheet, the create-user sheet and Revisão.
+- `TranscricaoResponse` mirrors the backend: `resumoExecutivo` lives inside `analise` (lists always showed
+  "Análise em processamento…" before). `AnaliseDetalheActivity` (ui/analise) is the mobile version of the web
+  `/transcricoes/[id]` page: header chips, resumo + persona/budget/confiança/sentimento tiles, próxima ação,
+  "Além do óbvio" (insightsAdicionais), qualidade da conversa (indicadoresQualidade), métricas, produtos,
+  oportunidades/riscos (consolidados com fallback nos brutos), alertas, trechos críticos, feedback para a
+  LeanIA (POST/GET /transcricoes/{id}/feedback) e transcrição original; reprocessar quando status=ERRO.
+- Two Claude sessions edited this repo at the same time on 2026-09-15 (one reset/recommitted the recorder);
+  always `git status` + look for duplicated methods before building.

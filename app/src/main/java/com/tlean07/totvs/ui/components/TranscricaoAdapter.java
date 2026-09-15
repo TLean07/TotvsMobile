@@ -67,9 +67,11 @@ public class TranscricaoAdapter extends RecyclerView.Adapter<TranscricaoAdapter.
         TranscricaoResponse t = items.get(position);
         String cliente = t.cliente != null && !t.cliente.isBlank() ? t.cliente : "Reunião sem cliente";
         holder.b.transcricaoCliente.setText(cliente);
-        String resumo = t.resumoExecutivo != null && !t.resumoExecutivo.isBlank()
-                ? t.resumoExecutivo
-                : "Análise em processamento…";
+        String resumo = t.resumoTexto();
+        if (resumo == null) {
+            resumo = "ERRO".equalsIgnoreCase(t.status) ? "A análise falhou. Abra para reprocessar."
+                    : "Análise em processamento…";
+        }
         holder.b.transcricaoResumo.setText(resumo);
         applyStatus(holder.b.transcricaoStatus, t.status);
         holder.b.getRoot().setOnClickListener(v -> {

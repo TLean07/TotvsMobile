@@ -54,6 +54,16 @@ public interface ApiService {
     @GET("transcricoes/{id}")
     Call<TranscricaoResponse> transcricao(@Path("id") String id);
 
+    @POST("transcricoes/{id}/reprocessar")
+    Call<TranscricaoResponse> reprocessar(@Path("id") String id);
+
+    @GET("transcricoes/{id}/feedback")
+    Call<List<com.tlean07.totvs.network.dto.AnaliseFeedbackResponse>> feedbacks(@Path("id") String id);
+
+    @POST("transcricoes/{id}/feedback")
+    Call<com.tlean07.totvs.network.dto.AnaliseFeedbackResponse> registrarFeedback(
+            @Path("id") String id, @Body com.tlean07.totvs.network.dto.AnaliseFeedbackRequest body);
+
     @POST("transcricoes")
     Call<TranscricaoResponse> criarTranscricao(@Body TranscricaoRequest body);
 
@@ -63,6 +73,15 @@ public interface ApiService {
             @Part MultipartBody.Part file,
             @Query("limit") int limit,
             @Query("offset") int offset);
+
+    /** Meeting audio (.wav/.m4a/.mp3) transcribed and analysed server-side. */
+    @Multipart
+    @POST("transcricoes/audio")
+    Call<TranscricaoResponse> importarAudio(
+            @Part MultipartBody.Part file,
+            @Part("cliente") okhttp3.RequestBody cliente,
+            @Part("vendedor") okhttp3.RequestBody vendedor,
+            @Part("participantes") okhttp3.RequestBody participantes);
 
     @GET("alertas")
     Call<List<AlertaResponse>> alertas();
