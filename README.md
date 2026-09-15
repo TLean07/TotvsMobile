@@ -55,6 +55,21 @@ mobile com **biometria**, **armazenamento via Android Keystore** e **vínculo de
   por falante, edição de nomes/papéis/falas e envio para a análise da LeanIA no formato `[LOCUTOR N]:`
 - **Importar áudio existente** — Qualquer gravação (.wav/.m4a/.mp3/.ogg) passa pelo mesmo
   reconhecimento de falantes e transcrição no celular; opção de mandar o áudio para o servidor
+- **Análise ao vivo (LeanIA no celular)** — Enquanto grava, a mesma LeanIA do backend roda offline e mostra
+  riscos, oportunidades, concorrentes, budget e próxima ação em tempo real; a prévia fica na revisão
+- **Gravador completo** — Nomear pessoas durante a gravação, reconhecimento automático da própria voz
+  ("Você") entre reuniões, marcadores rotulados pelo que foi dito, aviso LGPD, exportar TXT/PDF,
+  compartilhar resumo pronto para o CRM, qualidade/retenção configuráveis, áudio criptografado (Keystore),
+  biometria opcional para abrir as gravações
+- **Detalhe da análise no nível do dashboard web** — resumo, persona/budget/confiança, próxima ação,
+  "além do óbvio", qualidade da conversa, produtos, oportunidades, riscos, alertas, feedback para a LeanIA
+  com histórico, transcrição original, reprocessar, histórico do cliente com evolução do sentimento
+- **Busca e filtros** — Análises por cliente/status/sentimento/período; painel filtrável por período, UF e
+  segmento (recalculado no celular); alertas "tratados" com comentário
+- **Robustez** — Fila offline (envios feitos sem internet saem sozinhos quando a conexão volta),
+  skeleton de carregamento, registro de atividades local na aba Segurança, APK por ABI (~30 MB)
+- **Widget e notificações** — Widget de tela inicial com riscos/oportunidades/alertas novos e verificação
+  de alertas a cada 15 min (WorkManager) com notificação dos novos
 - **Administração de usuários** (admin) — Listar, criar (em bottom sheet), ativar/desativar
 - **Modo escuro completo** — Tema claro/escuro que acompanha o sistema; fundos viram azul-escuro,
   textos, chips e gráficos se adaptam

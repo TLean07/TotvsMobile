@@ -30,6 +30,10 @@ public final class AacTranscoder {
     }
 
     public static void transcode(File wav, File m4a, Progress progress) throws IOException {
+        transcode(wav, m4a, BIT_RATE, progress);
+    }
+
+    public static void transcode(File wav, File m4a, int bitRate, Progress progress) throws IOException {
         WavIo.Header header = WavIo.readHeader(wav);
         int sampleRate = header.sampleRate;
         int channels = header.channels;
@@ -37,7 +41,7 @@ public final class AacTranscoder {
 
         MediaFormat format = MediaFormat.createAudioFormat(MIME, sampleRate, channels);
         format.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC);
-        format.setInteger(MediaFormat.KEY_BIT_RATE, BIT_RATE);
+        format.setInteger(MediaFormat.KEY_BIT_RATE, bitRate > 0 ? bitRate : BIT_RATE);
         format.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 64 * 1024);
 
         MediaCodec codec = MediaCodec.createEncoderByType(MIME);

@@ -134,4 +134,28 @@ public final class SpeakerProfile {
         p.addAll(this);
         return p;
     }
+
+    /** Flat representation (sums + counts) for persistence: a voiceprint that survives the app. */
+    public double[] export() {
+        double[] out = new double[MFCC_DIMS * 2 + 3];
+        System.arraycopy(mfccSum, 0, out, 0, MFCC_DIMS);
+        System.arraycopy(unvoicedSum, 0, out, MFCC_DIMS, MFCC_DIMS);
+        out[MFCC_DIMS * 2] = pitchSum;
+        out[MFCC_DIMS * 2 + 1] = voicedFrames;
+        out[MFCC_DIMS * 2 + 2] = unvoicedFrames;
+        return out;
+    }
+
+    public static SpeakerProfile fromExport(double[] data) {
+        SpeakerProfile p = new SpeakerProfile();
+        if (data == null || data.length != MFCC_DIMS * 2 + 3) {
+            return p;
+        }
+        System.arraycopy(data, 0, p.mfccSum, 0, MFCC_DIMS);
+        System.arraycopy(data, MFCC_DIMS, p.unvoicedSum, 0, MFCC_DIMS);
+        p.pitchSum = data[MFCC_DIMS * 2];
+        p.voicedFrames = (int) data[MFCC_DIMS * 2 + 1];
+        p.unvoicedFrames = (int) data[MFCC_DIMS * 2 + 2];
+        return p;
+    }
 }

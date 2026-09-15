@@ -7,19 +7,24 @@ import android.os.Build;
 import androidx.annotation.MainThread;
 import androidx.annotation.Nullable;
 
+import com.tlean07.totvs.TotvsApp;
 import com.tlean07.totvs.audio.asr.TranscriptTurn;
 import com.tlean07.totvs.audio.asr.TranscriptionEngine;
 import com.tlean07.totvs.audio.asr.VoskEngine;
 import com.tlean07.totvs.audio.asr.VoskModelManager;
 import com.tlean07.totvs.audio.store.Recording;
 import com.tlean07.totvs.audio.store.RecordingStore;
+import com.tlean07.totvs.network.dto.AuthUser;
+import com.tlean07.totvs.security.AuditLog;
 import com.tlean07.totvs.util.AppExecutors;
 import com.tlean07.totvs.util.Logger;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * One live meeting recording: microphone → {@link AudioPipeline} → saved
@@ -39,6 +44,10 @@ public final class RecorderSession {
         void onLevel(float dbfs, long positionMs);
 
         void onFinishProgress(int percent);
+
+        /** The on-device LeanIA pass produced (new) signals for the live view. */
+        default void onLiveInsights(Recording.AnaliseLocal resumo) {
+        }
     }
 
     private static final String TAG = "RecorderSession";
@@ -50,15 +59,18 @@ public final class RecorderSession {
     private final RecordingStore store;
     private final List<Listener> listeners = new ArrayList<>();
     private final List<Recording.Marcador> marcadores = new ArrayList<>();
+    private final Map<Integer, String> nomes = new HashMap<>();
     private final float[] levelHistory = new float[LEVEL_HISTORY];
     private int levelIndex;
 
     private File dir;
     private AudioCapture capture;
     private AudioPipeline pipeline;
+    private LiveInsights insights;
     private volatile State state = State.PREPARING;
     private volatile String message;
     private volatile AudioPipeline.Snapshot lastSnapshot;
+    private volatile Recording.AnaliseLocal lastInsights;
     private volatile Recording result;
     private String modeloAsr;
     private boolean pausedByCall;
@@ -106,6 +118,11 @@ public final class RecorderSession {
     }
 
     @Nullable
+    public Recording.AnaliseLocal lastInsights() {
+        return lastInsights;
+    }
+
+    @Nullable
     public Recording result() {
         return result;
     }
@@ -118,8 +135,18 @@ public final class RecorderSession {
         return pipeline == null ? 0 : pipeline.positionMs();
     }
 
+    /** Seconds the recogniser is behind the audio (0 when idle / keeping up). */
+    public int asrLagSeconds() {
+        AudioPipeline.Snapshot s = lastSnapshot;
+        return s == null ? 0 : (int) (s.asrBacklog * 40L / 1000);
+    }
+
     public List<Recording.Marcador> marcadores() {
         return marcadores;
+    }
+
+    public Map<Integer, String> nomes() {
+        return nomes;
     }
 
     public boolean wasPausedByCall() {
@@ -145,6 +172,10 @@ public final class RecorderSession {
         if (s != null) {
             l.onSnapshot(s);
         }
+        Recording.AnaliseLocal i = lastInsights;
+        if (i != null) {
+            l.onLiveInsights(i);
+        }
     }
 
     @MainThread
@@ -164,6 +195,14 @@ public final class RecorderSession {
                                 pipeline.asrListener());
                         pipeline.attachAsr(asr);
                         modeloAsr = VoskModelManager.MODEL_LABEL;
+                        insights = new LiveInsights((resumo, completo) -> {
+                            lastInsights = resumo;
+                            AppExecutors.main(() -> {
+                                for (Listener l : new ArrayList<>(listeners)) {
+                                    l.onLiveInsights(resumo);
+                                }
+                            });
+                        });
                     } catch (IOException | RuntimeException e) {
                         Logger.w(TAG, "reconhecimento de voz indisponível: " + e.getMessage());
                     }
@@ -177,6 +216,7 @@ public final class RecorderSession {
                     }
                 });
                 registerCallWatcher();
+                AuditLog.get(app).record("gravacao.inicio", dir.getName());
                 setState(State.RECORDING, null);
             } catch (Exception e) {
                 Logger.e(TAG, "não foi possível iniciar a gravação", e);
@@ -190,6 +230,9 @@ public final class RecorderSession {
         @Override
         public void onSnapshot(AudioPipeline.Snapshot snapshot) {
             lastSnapshot = snapshot;
+            if (insights != null) {
+                insights.submit(snapshot.turns);
+            }
             AppExecutors.main(() -> {
                 for (Listener l : new ArrayList<>(listeners)) {
                     l.onSnapshot(snapshot);
@@ -232,6 +275,7 @@ public final class RecorderSession {
         setState(State.RECORDING, null);
     }
 
+    /** Flags the current moment; a null label is filled in later with the words spoken next. */
     @MainThread
     public void addMarker(@Nullable String rotulo) {
         if (pipeline == null) {
@@ -239,8 +283,24 @@ public final class RecorderSession {
         }
         Recording.Marcador m = new Recording.Marcador();
         m.tMs = pipeline.positionMs();
-        m.rotulo = rotulo == null || rotulo.isBlank() ? "Momento importante" : rotulo;
+        m.rotulo = rotulo == null || rotulo.isBlank() ? null : rotulo.trim();
         marcadores.add(m);
+    }
+
+    /** Names a detected speaker while the meeting is still running. */
+    @MainThread
+    public void setSpeakerName(int speaker, @Nullable String name) {
+        if (name == null || name.isBlank()) {
+            nomes.remove(speaker);
+        } else {
+            nomes.put(speaker, name.trim());
+        }
+        AudioPipeline.Snapshot s = lastSnapshot;
+        if (s != null) {
+            for (Listener l : new ArrayList<>(listeners)) {
+                l.onSnapshot(s);
+            }
+        }
     }
 
     /** Stops capturing, runs the final passes and saves; the listener gets DONE with {@link #result()}. */
@@ -255,17 +315,30 @@ public final class RecorderSession {
                 unregisterCallWatcher();
                 capture.stop();
                 List<TranscriptTurn> turns = pipeline.finish();
-                result = RecordingFinalizer.finish(store, dir, pipeline, turns, "microfone", modeloAsr, marcadores,
-                        null, pct -> AppExecutors.main(() -> {
+                RecordingFinalizer.Extras extras = new RecordingFinalizer.Extras();
+                extras.origem = "microfone";
+                extras.modeloAsr = modeloAsr;
+                extras.marcadores = new ArrayList<>(marcadores);
+                extras.nomes = new HashMap<>(nomes);
+                AuthUser user = TotvsApp.get().session().getCurrentUser();
+                extras.userId = user == null ? null : user.id;
+                extras.insights = insights;
+                result = RecordingFinalizer.finish(app, store, dir, pipeline, turns, extras,
+                        pct -> AppExecutors.main(() -> {
                             for (Listener l : new ArrayList<>(listeners)) {
                                 l.onFinishProgress(pct);
                             }
                         }));
+                AuditLog.get(app).record("gravacao.fim", dir.getName() + " · " + (result.duracaoMs / 1000) + "s · "
+                        + result.falantes.size() + " pessoas" + (result.criptografada ? " · criptografada" : ""));
                 setState(State.DONE, null);
             } catch (Exception e) {
                 Logger.e(TAG, "falha ao finalizar a gravação", e);
                 fail("Não foi possível salvar a gravação: " + e.getMessage());
             } finally {
+                if (insights != null) {
+                    insights.close();
+                }
                 clearCurrent();
             }
         });
@@ -286,7 +359,11 @@ public final class RecorderSession {
             } catch (Exception ignored) {
                 // discarding anyway
             }
+            if (insights != null) {
+                insights.close();
+            }
             cleanupDir();
+            AuditLog.get(app).record("gravacao.descartada", dir == null ? "-" : dir.getName());
             result = null;
             setState(State.DONE, "descartada");
             clearCurrent();

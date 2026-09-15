@@ -38,6 +38,16 @@ android {
         viewBinding true
         buildConfig true
     }
+    // One APK per CPU so a phone only downloads its own Vosk/JNA binaries (~10 MB instead of 40 MB);
+    // the universal APK is still produced for the emulator and sideloading.
+    splits {
+        abi {
+            enable true
+            reset()
+            include 'arm64-v8a', 'armeabi-v7a', 'x86_64'
+            universalApk true
+        }
+    }
 }
 
 dependencies {
@@ -64,6 +74,11 @@ dependencies {
 
     // Offline speech recognition (Kaldi) for the meeting recorder; the pt-BR model is downloaded on first use.
     implementation libs.vosk.android
+
+    // LeanIA local analyzer (same Java port the backend runs) uses Lombok DTOs; background alert polling uses WorkManager.
+    compileOnly libs.lombok
+    annotationProcessor libs.lombok
+    implementation libs.work.runtime
 
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit

@@ -95,6 +95,7 @@ public class RevisaoActivity extends AppCompatActivity {
 
         binding.revBack.setOnClickListener(v -> finish());
         binding.revDelete.setOnClickListener(v -> confirmDelete());
+        binding.revMore.setOnClickListener(this::showMoreMenu);
         binding.revPlay.setOnClickListener(v -> togglePlay());
         binding.revTimeline.setOnSeek(this::seekTo);
         binding.revSendText.setOnClickListener(v -> sendText());
@@ -137,6 +138,9 @@ public class RevisaoActivity extends AppCompatActivity {
             player.release();
             player = null;
         }
+        if (rec != null) {
+            store.releaseAudio(rec);
+        }
         super.onDestroy();
     }
 
@@ -147,7 +151,8 @@ public class RevisaoActivity extends AppCompatActivity {
         binding.revMeta.setText(getString(R.string.rev_meta, DATE.format(new Date(rec.criadoEm)),
                 rec.falantes.size(), TranscriptFormatter.formatClock(rec.duracaoMs)));
         boolean sent = Recording.STATUS_ENVIADA.equals(rec.status);
-        binding.revBadge.setText(sent ? R.string.rev_sent_badge : R.string.rev_draft_badge);
+        binding.revBadge.setText(sent ? R.string.rev_sent_badge
+                : Recording.STATUS_FILA.equals(rec.status) ? R.string.rev_queued_badge : R.string.rev_draft_badge);
         binding.revDuration.setText(TranscriptFormatter.formatClock(rec.duracaoMs));
         binding.revTimeline.bind(rec);
 
@@ -163,6 +168,7 @@ public class RevisaoActivity extends AppCompatActivity {
 
         renderSpeakers();
         renderMarkers();
+        renderPreview();
         adapter.setNames(rec.nomes());
         adapter.submit(rec.turns());
         boolean hasText = rec.temTexto();
@@ -313,6 +319,7 @@ public class RevisaoActivity extends AppCompatActivity {
                     f.nome = nome.isEmpty() ? null : nome;
                     if (dlg.dlgPapelVendedor.isChecked()) {
                         f.papel = "VENDEDOR";
+                        learnVoice(f);
                         if (f.nome != null && (binding.revVendedor.getText() == null || binding.revVendedor.getText().length() == 0)) {
                             binding.revVendedor.setText(f.nome);
                         }
@@ -459,6 +466,12 @@ public class RevisaoActivity extends AppCompatActivity {
             overlay(false);
             if (result.success) {
                 markSent(result.data == null ? null : result.data.id);
+            } else if (result.networkError) {
+                com.tlean07.totvs.network.PendingQueue.get(this).enqueue(req, rec.id);
+                rec.status = Recording.STATUS_FILA;
+                persist();
+                Toast.makeText(this, R.string.queue_offline, Toast.LENGTH_LONG).show();
+                finish();
             } else {
                 Toast.makeText(this, result.errorMessage, Toast.LENGTH_LONG).show();
             }
@@ -494,8 +507,159 @@ public class RevisaoActivity extends AppCompatActivity {
         rec.status = Recording.STATUS_ENVIADA;
         rec.transcricaoId = transcricaoId;
         persist();
+        com.tlean07.totvs.security.AuditLog.get(this).record("gravacao.enviada",
+                rec.id + (transcricaoId != null ? " → análise " + transcricaoId : ""));
         Toast.makeText(this, R.string.rev_sent, Toast.LENGTH_SHORT).show();
         finish();
+    }
+
+    // --- more menu: export / share ---
+
+    private void showMoreMenu(View anchor) {
+        android.widget.PopupMenu menu = new android.widget.PopupMenu(this, anchor);
+        menu.getMenu().add(0, 1, 0, R.string.rev_export_txt);
+        menu.getMenu().add(0, 2, 1, R.string.rev_export_pdf);
+        menu.getMenu().add(0, 3, 2, R.string.rev_share_summary);
+        menu.setOnMenuItemClickListener(item -> {
+            readForm();
+            switch (item.getItemId()) {
+                case 1:
+                    export(false);
+                    return true;
+                case 2:
+                    export(true);
+                    return true;
+                case 3:
+                    shareSummary();
+                    return true;
+                default:
+                    return false;
+            }
+        });
+        menu.show();
+    }
+
+    private void export(boolean pdf) {
+        Recording snapshot = rec;
+        AppExecutors.io(() -> {
+            try {
+                File f = pdf ? com.tlean07.totvs.audio.TranscriptExporter.toPdf(this, snapshot)
+                        : com.tlean07.totvs.audio.TranscriptExporter.toTxt(this, snapshot);
+                com.tlean07.totvs.security.AuditLog.get(this).record("gravacao.exportada", snapshot.id + " · " + f.getName());
+                AppExecutors.main(() -> com.tlean07.totvs.audio.TranscriptExporter.share(this, f, pdf ? "application/pdf" : "text/plain"));
+            } catch (Exception e) {
+                AppExecutors.main(() -> Toast.makeText(this, R.string.error_generic, Toast.LENGTH_SHORT).show());
+            }
+        });
+    }
+
+    /** One-tap CRM hand-off: a ready-to-paste summary through the system share sheet. */
+    private void shareSummary() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Reunião: ").append(rec.tituloOuPadrao()).append('\n');
+        sb.append("Data: ").append(DATE.format(new Date(rec.criadoEm))).append(" · ")
+                .append(TranscriptFormatter.formatClock(rec.duracaoMs)).append('\n');
+        if (rec.vendedor != null) {
+            sb.append("Vendedor: ").append(rec.vendedor).append('\n');
+        }
+        sb.append("Participantes: ").append(rec.participantes != null ? rec.participantes : rec.participantesTexto()).append('\n');
+        Recording.AnaliseLocal a = rec.analiseLocal;
+        if (a != null) {
+            sb.append("\nSentimento: ").append(GravadorActivity.sentimentoLabel(a.sentimentoGeral)).append('\n');
+            if (a.persona != null) {
+                sb.append("Interlocutor: ").append(a.persona).append('\n');
+            }
+            if (a.budget != null) {
+                sb.append("Budget: ").append(a.budget).append('\n');
+            }
+            if (!a.riscos.isEmpty()) {
+                sb.append("\nRiscos:\n");
+                for (Recording.Sinal s : a.riscos) {
+                    sb.append("- ").append(s.texto).append('\n');
+                }
+            }
+            if (!a.oportunidades.isEmpty()) {
+                sb.append("\nOportunidades:\n");
+                for (Recording.Sinal s : a.oportunidades) {
+                    sb.append("- ").append(s.texto).append('\n');
+                }
+            }
+            if (a.proximaAcao != null) {
+                sb.append("\nPróxima ação: ").append(a.proximaAcao).append('\n');
+            }
+        }
+        if (!rec.marcadores.isEmpty()) {
+            sb.append("\nMomentos marcados:\n");
+            for (Recording.Marcador m : rec.marcadores) {
+                sb.append("- ").append(TranscriptFormatter.formatClock(m.tMs)).append(' ').append(m.rotulo).append('\n');
+            }
+        }
+        sb.append("\nGerado pelo TOTVS Conversational Intelligence");
+        Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain")
+                .putExtra(Intent.EXTRA_SUBJECT, "Resumo da reunião: " + rec.tituloOuPadrao())
+                .putExtra(Intent.EXTRA_TEXT, sb.toString());
+        startActivity(Intent.createChooser(send, getString(R.string.rev_share_summary)));
+        com.tlean07.totvs.security.AuditLog.get(this).record("gravacao.compartilhada", rec.id);
+    }
+
+    /** The user said "this is me": remember this voice for the next recordings. */
+    private void learnVoice(Recording.Falante f) {
+        com.tlean07.totvs.network.dto.AuthUser user = TotvsApp.get().session().getCurrentUser();
+        if (user == null || f.voz == null) {
+            return;
+        }
+        com.tlean07.totvs.audio.VoicePrints prints = new com.tlean07.totvs.audio.VoicePrints(this);
+        boolean knew = prints.has(user.id);
+        prints.learn(user.id, com.tlean07.totvs.audio.dsp.SpeakerProfile.fromExport(f.voz));
+        if (!knew && prints.has(user.id)) {
+            Toast.makeText(this, R.string.rev_voice_learned, Toast.LENGTH_LONG).show();
+            com.tlean07.totvs.security.AuditLog.get(this).record("voz.aprendida", user.id);
+        }
+    }
+
+    /** What the on-device LeanIA found, before/without the server analysis. */
+    private void renderPreview() {
+        Recording.AnaliseLocal a = rec.analiseLocal;
+        binding.revPreview.removeAllViews();
+        if (a == null || (a.riscos.isEmpty() && a.oportunidades.isEmpty() && a.resumo == null)) {
+            binding.revPreviewCard.setVisibility(View.GONE);
+            return;
+        }
+        binding.revPreviewCard.setVisibility(View.VISIBLE);
+        float d = getResources().getDisplayMetrics().density;
+        addText(binding.revPreview, getString(R.string.rev_preview_title), 15, R.color.text_primary_light, true, 0);
+        addText(binding.revPreview, getString(R.string.rev_preview_hint), 12, R.color.text_muted_light, false, 2);
+        addText(binding.revPreview, GravadorActivity.sentimentoLabel(a.sentimentoGeral)
+                + (a.persona != null ? " · " + a.persona : "") + (a.budget != null ? " · " + a.budget : ""), 13,
+                GravadorActivity.sentimentoColor(a.sentimentoGeral), true, 10);
+        if (a.resumo != null) {
+            addText(binding.revPreview, a.resumo, 13, R.color.text_secondary_light, false, 6);
+        }
+        for (Recording.Sinal s : a.riscos) {
+            addText(binding.revPreview, "▲ " + s.texto, 13, R.color.totvs_danger, false, 6);
+        }
+        for (Recording.Sinal s : a.oportunidades) {
+            addText(binding.revPreview, "● " + s.texto, 13, R.color.totvs_accent, false, 6);
+        }
+        if (!a.concorrentes.isEmpty()) {
+            addText(binding.revPreview, getString(R.string.live_concorrente, String.join(", ", a.concorrentes)), 13,
+                    R.color.totvs_warning, false, 6);
+        }
+        if (a.proximaAcao != null) {
+            addText(binding.revPreview, getString(R.string.live_acao, a.proximaAcao), 13, R.color.speaker_1, true, 8);
+        }
+    }
+
+    private void addText(android.widget.LinearLayout parent, String text, int sp, int color, boolean bold, int topDp) {
+        TextView tv = new TextView(this);
+        tv.setText(text);
+        tv.setTextSize(sp);
+        tv.setTextColor(ContextCompat.getColor(this, color));
+        if (bold) {
+            tv.setTypeface(null, android.graphics.Typeface.BOLD);
+        }
+        tv.setPadding(0, (int) (topDp * getResources().getDisplayMetrics().density), 0, 0);
+        parent.addView(tv);
     }
 
     private void confirmDelete() {

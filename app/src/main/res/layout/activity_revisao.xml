@@ -60,6 +60,16 @@
                     android:textStyle="bold" />
 
                 <ImageButton
+                    android:id="@+id/revMore"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="4dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/rev_more"
+                    android:src="@drawable/ic_more_vert"
+                    app:tint="@android:color/white" />
+
+                <ImageButton
                     android:id="@+id/revDelete"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
@@ -295,6 +305,25 @@
                                 android:textColor="@color/on_background_light" />
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- On-device LeanIA preview -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/revPreviewCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:visibility="gone"
+                    app:cardBackgroundColor="@color/surface_light"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="1dp">
+
+                    <LinearLayout
+                        android:id="@+id/revPreview"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp" />
                 </androidx.cardview.widget.CardView>
 
                 <!-- Markers -->

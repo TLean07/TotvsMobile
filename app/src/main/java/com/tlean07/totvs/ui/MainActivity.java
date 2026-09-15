@@ -56,6 +56,13 @@ public class MainActivity extends AppCompatActivity implements AuthEvents.Listen
         if (savedInstanceState == null) {
             binding.bottomNav.setSelectedItemId(R.id.nav_dashboard);
         }
+        com.tlean07.totvs.work.AlertasWorker.schedule(this);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU
+                && androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            androidx.core.app.ActivityCompat.requestPermissions(this,
+                    new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 71);
+        }
     }
 
     private void show(Fragment fragment, String tag) {

@@ -56,6 +56,11 @@ public class AlertaAdapter extends RecyclerView.Adapter<AlertaAdapter.VH> {
             if (meta.length() > 0) meta.append(" • ");
             meta.append(a.ocorrencias).append("x");
         }
+        String nota = new com.tlean07.totvs.ui.alertas.AlertNotes(holder.b.getRoot().getContext()).get(a.id);
+        if (nota != null) {
+            if (meta.length() > 0) meta.append(" • ");
+            meta.append(holder.b.getRoot().getContext().getString(com.tlean07.totvs.R.string.alert_treated, nota));
+        }
         holder.b.alertaMeta.setText(meta.toString());
         holder.b.alertaSeverity.setBackgroundColor(severityColor(a.prioridade));
         holder.b.getRoot().setOnClickListener(v -> {

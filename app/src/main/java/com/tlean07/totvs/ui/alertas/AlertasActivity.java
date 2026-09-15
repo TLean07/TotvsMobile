@@ -150,10 +150,50 @@ public class AlertasActivity extends AppCompatActivity {
                 .setMessage(msg.toString())
                 .setPositiveButton("Fechar", null);
 
+        String nota = new AlertNotes(this).get(a.id);
+        if (nota != null) {
+            b.setMessage(msg + "\n\n" + getString(R.string.alert_treated, nota));
+        }
+        b.setNeutralButton(R.string.alert_treat, (d, w) -> tratar(a));
         if ("NOVO".equalsIgnoreCase(a.status)) {
-            b.setNeutralButton("Marcar como visto", (d, w) -> marcarVisto(a));
+            b.setNegativeButton("Marcar como visto", (d, w) -> marcarVisto(a));
         }
         b.show();
+    }
+
+    /** "Tratado" note kept on the device (the backend only knows "visto"). */
+    private void tratar(AlertaResponse a) {
+        android.widget.EditText input = new android.widget.EditText(this);
+        input.setHint(R.string.alert_treat_hint);
+        input.setMinLines(2);
+        String atual = new AlertNotes(this).get(a.id);
+        if (atual != null) {
+            input.setText(atual);
+        }
+        int pad = (int) (22 * getResources().getDisplayMetrics().density);
+        android.widget.LinearLayout wrap = new android.widget.LinearLayout(this);
+        wrap.setPadding(pad, 0, pad, 0);
+        wrap.addView(input, new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT));
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.alert_treat)
+                .setView(wrap)
+                .setPositiveButton(R.string.save, (d, w) -> {
+                    String nota = input.getText().toString().trim();
+                    if (nota.isEmpty()) {
+                        return;
+                    }
+                    new AlertNotes(this).put(a.id, nota);
+                    com.tlean07.totvs.security.AuditLog.get(this).record("alerta.tratado", a.id + " · " + nota);
+                    android.widget.Toast.makeText(this, R.string.alert_treated_ok, android.widget.Toast.LENGTH_SHORT).show();
+                    if ("NOVO".equalsIgnoreCase(a.status)) {
+                        marcarVisto(a);
+                    } else {
+                        load();
+                    }
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
     }
 
     private void marcarVisto(AlertaResponse a) {

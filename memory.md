@@ -246,3 +246,27 @@ Facts learned while tuning (TTS dialogues Antonio/Francisca/Duarte/Thalita via e
   LeanIA (POST/GET /transcricoes/{id}/feedback) e transcrição original; reprocessar quando status=ERRO.
 - Two Claude sessions edited this repo at the same time on 2026-09-15 (one reset/recommitted the recorder);
   always `git status` + look for duplicated methods before building.
+
+## Lote de melhorias (2026-09-15, tarde)
+- `leania/` = cópia do `LeanIALocalAnalyzer` + DTOs Lombok do backend (compileOnly/annotationProcessor lombok
+  1.18.48). `audio/LiveInsights` roda o analisador sobre os turnos a cada 8 s (thread própria) e uma vez no
+  fim; resumo em `Recording.AnaliseLocal` (card "Sinais ao vivo" no gravador, "Prévia da LeanIA" na revisão,
+  texto do "Compartilhar resumo").
+- `VoicePrints` guarda a voz do usuário (SpeakerProfile.export) em prefs por userId; marcar-se como
+  VENDEDOR na revisão ensina, `RecordingFinalizer` reconhece (distância < 0.9) e nomeia "Você".
+- Marcadores: rótulo = palavras dos 6 s seguintes; long-press = digitar. `RecorderSettings` (bitrate,
+  retenção, criptografia, biometria, consentimento). `RecordingCrypto` (EncryptedFile) cifra o M4A no fim;
+  `RecordingStore.audioFile` decifra para cache/play e `releaseAudio` apaga.
+- `TranscriptExporter` (TXT/PDF via PdfDocument + FileProvider `${applicationId}.files`).
+- `network/PendingQueue` (fila offline em filesDir/fila, flush no NetworkCallback do TotvsApp, no onResume
+  e no worker); `NetworkResult.networkError` marca IOException.
+- `DataRepository.transcricoesTodas` monta a lista completa por páginas de 100 (o GET /transcricoes
+  inteiro levava 47 s na Render); usada pela busca/filtros da aba Análises e pelo painel filtrado.
+- `AlertNotes` (comentário "tratado" local), `security/AuditLog` (jsonl, card na aba Segurança),
+  `widget/ResumoWidget` (prefs alimentadas pelo dashboard/worker), `work/AlertasWorker` (15 min, canal
+  "alertas", só notifica ids não vistos; primeira execução só aprende).
+- Ícone adaptativo próprio (balão + onda) e splash animado (AVD `splash_anim`). `splits.abi` gera APK por
+  ABI + universal; o emulador usa o x86_64.
+- Observado: com o backend lento, o token expirou no meio do carregamento paginado (401 "Nao autenticado");
+  o loader tenta cada página 2x. O endpoint /transcricoes/cliente/{nome} com espaços precisa de
+  URL-encode (Retrofit @Path faz).

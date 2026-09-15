@@ -64,7 +64,8 @@ public class GravacaoAdapter extends RecyclerView.Adapter<GravacaoAdapter.VH> {
         b.gravacaoPreview.setText(preview != null ? preview : b.getRoot().getContext().getString(R.string.rev_transcript_none));
         b.gravacaoIcon.setImageResource("arquivo".equals(r.origem) ? R.drawable.ic_audio_file : R.drawable.ic_mic);
         boolean sent = Recording.STATUS_ENVIADA.equals(r.status);
-        b.gravacaoStatus.setText(sent ? R.string.rev_sent_badge : R.string.rev_draft_badge);
+        b.gravacaoStatus.setText(sent ? R.string.rev_sent_badge
+                : Recording.STATUS_FILA.equals(r.status) ? R.string.rev_queued_badge : R.string.rev_draft_badge);
         b.gravacaoStatus.setBackgroundResource(sent ? R.drawable.bg_pill_success : R.drawable.bg_pill_warning);
         b.gravacaoStatus.setTextColor(ContextCompat.getColor(b.getRoot().getContext(),
                 sent ? R.color.chip_success_fg : R.color.chip_warning_fg));

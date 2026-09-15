@@ -51,6 +51,22 @@ public class TotvsApp extends Application {
         authRepository = new AuthRepository(apiClient.api(), sessionManager, deviceManager);
         dataRepository = new DataRepository(apiClient.api());
 
+        // Replay queued sends as soon as a connection is available again.
+        try {
+            android.net.ConnectivityManager cm = (android.net.ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+            if (cm != null) {
+                cm.registerDefaultNetworkCallback(new android.net.ConnectivityManager.NetworkCallback() {
+                    @Override
+                    public void onAvailable(@androidx.annotation.NonNull android.net.Network network) {
+                        com.tlean07.totvs.network.PendingQueue.get(TotvsApp.this).flush(null);
+                    }
+                });
+            }
+        } catch (RuntimeException ignored) {
+            // some OEM images throw when too many callbacks are registered
+        }
+        com.tlean07.totvs.work.AlertasWorker.ensureChannel(this);
+
         // Credential Manager isn't present on every OEM image — never let its
         // initialisation take down the whole app at startup.
         try {

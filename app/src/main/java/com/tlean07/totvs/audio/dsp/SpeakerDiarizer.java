@@ -442,6 +442,22 @@ public final class SpeakerDiarizer implements FeatureExtractor.Listener {
         return segments();
     }
 
+    /** One aggregated voice profile per speaker index (labels as currently held, i.e. after refine()). */
+    public List<SpeakerProfile> speakerProfiles() {
+        int n = speakerCount();
+        List<SpeakerProfile> out = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            out.add(new SpeakerProfile());
+        }
+        for (int i = 0; i < segments.size() && i < segmentProfiles.size(); i++) {
+            int s = segments.get(i).speaker;
+            if (s >= 0 && s < n) {
+                out.get(s).addAll(segmentProfiles.get(i));
+            }
+        }
+        return out;
+    }
+
     private static int countAlive(boolean[] alive) {
         int c = 0;
         for (boolean b : alive) {

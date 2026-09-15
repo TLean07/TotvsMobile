@@ -25,7 +25,9 @@ public final class Calls {
                 }
             } catch (Exception e) {
                 String message = ErrorMapper.fromThrowable(e);
-                AppExecutors.main(() -> callback.onResult(NetworkResult.error(message)));
+                boolean offline = e instanceof java.io.IOException;
+                AppExecutors.main(() -> callback.onResult(offline
+                        ? NetworkResult.networkError(message) : NetworkResult.error(message)));
             }
         });
     }

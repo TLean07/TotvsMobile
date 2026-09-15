@@ -54,6 +54,9 @@ public interface ApiService {
     @GET("transcricoes/{id}")
     Call<TranscricaoResponse> transcricao(@Path("id") String id);
 
+    @GET("transcricoes/cliente/{cliente}")
+    Call<List<TranscricaoResponse>> transcricoesPorCliente(@Path("cliente") String cliente);
+
     @POST("transcricoes/{id}/reprocessar")
     Call<TranscricaoResponse> reprocessar(@Path("id") String id);
 

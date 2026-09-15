@@ -94,13 +94,13 @@ public class AnaliseDetalheActivity extends AppCompatActivity {
     private void load(boolean force) {
         binding.anaState.setVisibility(View.GONE);
         if (item == null) {
-            binding.anaProgress.setVisibility(View.VISIBLE);
+            binding.anaSkeleton.getRoot().setVisibility(View.VISIBLE);
         }
         data.transcricao(id, force, result -> {
             if (binding == null) {
                 return;
             }
-            binding.anaProgress.setVisibility(View.GONE);
+            binding.anaSkeleton.getRoot().setVisibility(View.GONE);
             binding.anaSwipe.setRefreshing(false);
             if (!result.success || result.data == null) {
                 if (item == null) {
@@ -180,6 +180,33 @@ public class AnaliseDetalheActivity extends AppCompatActivity {
         LinearLayout content = binding.anaContent;
         content.removeAllViews();
 
+        // Quick actions: client history + one-tap CRM hand-off.
+        LinearLayout actions = new LinearLayout(this);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams alp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        alp.bottomMargin = dp(12);
+        actions.setLayoutParams(alp);
+        if (!TextUtils.isEmpty(t.cliente)) {
+            MaterialButton hist = new MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle);
+            hist.setText(R.string.cli_open);
+            hist.setTextSize(12f);
+            hist.setIconResource(R.drawable.ic_schedule);
+            hist.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+            hist.setOnClickListener(v -> startActivity(ClienteHistoricoActivity.intent(this, t.cliente)));
+            actions.addView(hist);
+        }
+        MaterialButton share = new MaterialButton(this);
+        share.setText(R.string.rev_share_summary);
+        share.setTextSize(12f);
+        share.setIconResource(R.drawable.ic_share);
+        LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        slp.setMarginStart(actions.getChildCount() > 0 ? dp(8) : 0);
+        share.setLayoutParams(slp);
+        share.setOnClickListener(v -> shareSummary());
+        actions.addView(share);
+        content.addView(actions);
+
         if ("ERRO".equalsIgnoreCase(t.status)) {
             LinearLayout box = section(getString(R.string.ana_erro), null);
             MaterialButton btn = new MaterialButton(this);
@@ -244,11 +271,92 @@ public class AnaliseDetalheActivity extends AppCompatActivity {
             card.addView(box);
         }
         if (!TextUtils.isEmpty(a.sentimentoDetalhe)) {
-            TextView s = text(getString(R.string.ana_sentimento_area) + ": " + a.sentimentoDetalhe, 13,
-                    R.color.text_secondary_light, false);
-            s.setPadding(0, dp(8), 0, 0);
+            TextView s = text(getString(R.string.ana_sentimento_area), 11, R.color.text_muted_light, true);
+            s.setPadding(0, dp(10), 0, 0);
             card.addView(s);
+            com.google.android.material.chip.ChipGroup group = new com.google.android.material.chip.ChipGroup(this);
+            group.setChipSpacingHorizontal(dp(6));
+            for (String parte : a.sentimentoDetalhe.split("\\s*[;|]\\s*|\\s*,\\s*(?=[A-ZÀ-Ú])")) {
+                if (parte.isBlank()) {
+                    continue;
+                }
+                com.google.android.material.chip.Chip chip = new com.google.android.material.chip.Chip(this);
+                chip.setText(parte.trim());
+                chip.setTextSize(12f);
+                chip.setClickable(false);
+                int c = ContextCompat.getColor(this, sentimentoColor(guessSentimento(parte)));
+                chip.setChipBackgroundColor(android.content.res.ColorStateList.valueOf((c & 0x00FFFFFF) | 0x1F000000));
+                chip.setTextColor(c);
+                group.addView(chip);
+            }
+            card.addView(group);
         }
+    }
+
+    private static String guessSentimento(String texto) {
+        String t = texto.toLowerCase(Locale.ROOT);
+        if (t.contains("negativ") || t.contains("insatisf") || t.contains("frustra")) {
+            return "NEGATIVO";
+        }
+        if (t.contains("positiv") || t.contains("elogio") || t.contains("satisf")) {
+            return "POSITIVO";
+        }
+        if (t.contains("mist")) {
+            return "MISTO";
+        }
+        return "NEUTRO";
+    }
+
+    /** One-tap CRM hand-off: the analysis as plain text through the system share sheet. */
+    private void shareSummary() {
+        TranscricaoResponse t = item;
+        TranscricaoResponse.Analise a = t.analise;
+        StringBuilder sb = new StringBuilder();
+        sb.append("Reunião: ").append(t.cliente != null ? t.cliente : "-").append('\n');
+        if (t.vendedor != null) {
+            sb.append("Vendedor: ").append(t.vendedor).append('\n');
+        }
+        String quando = formatDate(t.dataProcessamento != null ? t.dataProcessamento : t.dataCriacao);
+        if (quando != null) {
+            sb.append("Data: ").append(quando).append('\n');
+        }
+        if (a != null) {
+            sb.append("Sentimento: ").append(sentimentoLabel(a.sentimentoGeral)).append('\n');
+            if (a.personaIdentificada != null) {
+                sb.append("Interlocutor: ").append(a.personaIdentificada).append('\n');
+            }
+            if (a.budgetIdentificado != null) {
+                sb.append("Budget: ").append(a.budgetIdentificado).append('\n');
+            }
+            String resumo = t.resumoTexto();
+            if (resumo != null) {
+                sb.append("\nResumo: ").append(resumo).append('\n');
+            }
+            if (a.proximaAcao != null) {
+                sb.append("\nPróxima ação: ").append(a.proximaAcao).append('\n');
+            }
+            List<OportunidadeConsolidadaDto> ops = firstNonEmpty(a.oportunidadesConsolidadas, t.oportunidadesConsolidadas);
+            if (!ops.isEmpty()) {
+                sb.append("\nOportunidades:\n");
+                for (OportunidadeConsolidadaDto o : ops) {
+                    sb.append("- ").append(o.categoria).append(o.recomendacao != null ? ": " + o.recomendacao : "").append('\n');
+                }
+            }
+            List<RiscoConsolidadoDto> rs = firstNonEmpty(a.riscosConsolidados, t.riscosConsolidados);
+            if (!rs.isEmpty()) {
+                sb.append("\nRiscos:\n");
+                for (RiscoConsolidadoDto r : rs) {
+                    sb.append("- ").append(r.categoria).append(" (").append(severidadeLabel(r.severidade)).append(")")
+                            .append(r.recomendacao != null ? ": " + r.recomendacao : "").append('\n');
+                }
+            }
+        }
+        sb.append("\nGerado pelo TOTVS Conversational Intelligence");
+        Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain")
+                .putExtra(Intent.EXTRA_SUBJECT, "Resumo da reunião: " + (t.cliente != null ? t.cliente : ""))
+                .putExtra(Intent.EXTRA_TEXT, sb.toString());
+        startActivity(Intent.createChooser(send, getString(R.string.rev_share_summary)));
+        com.tlean07.totvs.security.AuditLog.get(this).record("analise.compartilhada", t.id);
     }
 
     private void renderAlemDoObvio(@Nullable Map<String, Object> ins) {
@@ -509,6 +617,10 @@ public class AnaliseDetalheActivity extends AppCompatActivity {
 
     // ------------------------------------------------------------------ actions
 
+    private void enviarFeedbackAudit(boolean util) {
+        com.tlean07.totvs.security.AuditLog.get(this).record("feedback.enviado", id + " · " + (util ? "útil" : "ajuste"));
+    }
+
     private void enviarFeedback(boolean util) {
         String texto = feedbackView.fbTexto.getText() == null ? "" : feedbackView.fbTexto.getText().toString().trim();
         feedbackView.fbUtil.setEnabled(false);
@@ -521,6 +633,7 @@ public class AnaliseDetalheActivity extends AppCompatActivity {
             feedbackView.fbAjuste.setEnabled(true);
             if (result.success) {
                 feedbackView.fbTexto.setText("");
+                enviarFeedbackAudit(util);
                 Toast.makeText(this, R.string.ana_fb_enviado, Toast.LENGTH_SHORT).show();
                 loadFeedbacks();
             } else {

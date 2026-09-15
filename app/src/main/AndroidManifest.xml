@@ -73,6 +73,22 @@
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.TotvsMobile.NoActionBar" />
 
+        <activity
+            android:name=".ui.analise.ClienteHistoricoActivity"
+            android:exported="false"
+            android:theme="@style/Theme.TotvsMobile.NoActionBar" />
+
+        <receiver
+            android:name=".widget.ResumoWidget"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_resumo_info" />
+        </receiver>
+
         <!-- Meeting recorder -->
         <activity
             android:name=".ui.gravador.GravadorActivity"
@@ -95,6 +111,16 @@
             android:name=".ui.gravador.ImportarAudioActivity"
             android:exported="false"
             android:theme="@style/Theme.TotvsMobile.NoActionBar" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <service
             android:name=".audio.MeetingRecorderService"

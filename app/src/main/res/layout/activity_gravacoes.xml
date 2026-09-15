@@ -45,6 +45,15 @@
                     android:text="@string/lst_eyebrow"
                     android:textColor="#CFE3F4"
                     android:textSize="11sp" />
+
+                <ImageButton
+                    android:id="@+id/lstSettings"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/cfg_title"
+                    android:src="@drawable/ic_settings"
+                    app:tint="@android:color/white" />
             </LinearLayout>
 
             <TextView

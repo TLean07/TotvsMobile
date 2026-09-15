@@ -11,6 +11,33 @@ public final class Recording {
 
     public static final String STATUS_RASCUNHO = "RASCUNHO";
     public static final String STATUS_ENVIADA = "ENVIADA";
+    public static final String STATUS_FILA = "NA_FILA";
+
+    /** One signal the on-device LeanIA found (risk, opportunity or alert). */
+    public static final class Sinal {
+        public String tipo;
+        public String severidade;
+        public String texto;
+        public String extra;
+        public Double score;
+    }
+
+    /** Summary of the on-device LeanIA pass (live during recording, final at the end). */
+    public static final class AnaliseLocal {
+        public String sentimentoGeral;
+        public Double scoreSentimento;
+        public String resumo;
+        public String proximaAcao;
+        public String persona;
+        public String budget;
+        public Double confiancaVendedor;
+        public List<Sinal> riscos = new ArrayList<>();
+        public List<Sinal> oportunidades = new ArrayList<>();
+        public List<Sinal> alertas = new ArrayList<>();
+        public List<String> concorrentes = new ArrayList<>();
+        public List<String> produtos = new ArrayList<>();
+        public long atualizadoEm;
+    }
 
     public static final class Falante {
         public int indice;
@@ -18,6 +45,8 @@ public final class Recording {
         /** "VENDEDOR", "CLIENTE" or "OUTRO". */
         public String papel = "OUTRO";
         public long tempoFalaMs;
+        /** Voice fingerprint (see SpeakerProfile.export) – lets the app recognise this person next time. */
+        public double[] voz;
 
         public String rotulo() {
             return nome == null || nome.isBlank() ? TranscriptFormatter.defaultName(indice) : nome;
@@ -52,6 +81,8 @@ public final class Recording {
     public String audioArquivo;
     public String modeloAsr;
     public boolean transcricaoDisponivel;
+    public boolean criptografada;
+    public AnaliseLocal analiseLocal;
     public List<Falante> falantes = new ArrayList<>();
     public List<Turno> turnos = new ArrayList<>();
     public List<Marcador> marcadores = new ArrayList<>();

@@ -287,4 +287,108 @@
     <string name="ana_sev_critica">Crítica</string>
     <string name="ana_sev_media">Média</string>
     <string name="ana_sev_baixa">Baixa</string>
+
+    <!-- Gravador: consentimento, sinais ao vivo, configurações -->
+    <string name="consent_title">Aviso aos participantes</string>
+    <string name="consent_message">Antes de gravar, avise todos os participantes que a reunião será gravada e transcrita para análise comercial (LGPD). O áudio fica criptografado no seu celular e só é enviado ao servidor se você mandar.\n\nPara gravar uma reunião no Teams ou uma ligação, coloque em viva-voz perto do celular.</string>
+    <string name="consent_accept">Todos foram avisados</string>
+    <string name="consent_remember">Não mostrar de novo</string>
+    <string name="live_title">Sinais ao vivo (LeanIA)</string>
+    <string name="live_counters">%1$d riscos · %2$d oportunidades · %3$d alertas</string>
+    <string name="live_risco">Risco</string>
+    <string name="live_oportunidade">Oportunidade</string>
+    <string name="live_concorrente">Concorrente: %1$s</string>
+    <string name="live_budget">Budget: %1$s</string>
+    <string name="live_persona">Interlocutor: %1$s</string>
+    <string name="live_acao">Próxima ação: %1$s</string>
+    <string name="grav_rename_title">Nome da pessoa</string>
+    <string name="grav_rename_hint">Ex.: Mariana (cliente)</string>
+    <string name="grav_marker_label_title">Rótulo do momento</string>
+    <string name="grav_marker_label_hint">Ex.: objeção de preço</string>
+    <string name="grav_marker_tip">Toque: marca o momento e usa o que foi dito em seguida como rótulo. Segure: digite o rótulo.</string>
+    <string name="cfg_title">Configurações da gravação</string>
+    <string name="cfg_quality">Qualidade do áudio</string>
+    <string name="cfg_retention">Apagar gravações já enviadas</string>
+    <string name="cfg_encrypt">Criptografar gravações no celular</string>
+    <string name="cfg_biometric">Pedir biometria para abrir as gravações</string>
+    <string name="cfg_forget_voice">Esquecer minha voz</string>
+    <string name="cfg_voice_known">Sua voz já é reconhecida automaticamente.</string>
+    <string name="cfg_voice_unknown">Marque-se como vendedor na revisão de uma gravação para o app aprender sua voz.</string>
+    <string name="cfg_saved">Configurações salvas</string>
+    <string name="rev_more">Mais opções</string>
+    <string name="rev_export_txt">Exportar como TXT</string>
+    <string name="rev_export_pdf">Exportar como PDF</string>
+    <string name="rev_share_summary">Compartilhar resumo</string>
+    <string name="rev_preview_title">Prévia da LeanIA (no celular)</string>
+    <string name="rev_preview_hint">Análise feita offline durante a gravação. A análise completa vem do servidor após o envio.</string>
+    <string name="rev_voice_learned">Sua voz foi registrada: nas próximas gravações você será identificado automaticamente.</string>
+    <string name="bio_recordings_title">Gravações protegidas</string>
+    <string name="bio_recordings_subtitle">Confirme sua identidade para ver as gravações</string>
+
+    <!-- Busca e filtros -->
+    <string name="ai_search_hint">Buscar por cliente</string>
+    <string name="ai_filter_all">Todas</string>
+    <string name="ai_filter_processed">Processadas</string>
+    <string name="ai_filter_processing">Em processamento</string>
+    <string name="ai_filter_error">Com erro</string>
+    <string name="ai_filter_sent_positive">Positivas</string>
+    <string name="ai_filter_sent_negative">Negativas</string>
+    <string name="ai_filter_sent_mixed">Mistas</string>
+    <string name="ai_filter_7d">7 dias</string>
+    <string name="ai_filter_30d">30 dias</string>
+    <string name="ai_filter_result">%1$d de %2$d análises</string>
+    <string name="ai_filter_empty">Nenhuma análise com esses filtros.</string>
+    <string name="dash_filter_period">Período</string>
+    <string name="dash_filter_uf">UF</string>
+    <string name="dash_filter_segment">Segmento</string>
+    <string name="dash_filter_clear">Limpar</string>
+    <string name="dash_filter_all">Tudo</string>
+    <string name="dash_filter_info">Filtro local: %1$d de %2$d reuniões · alertas novos sem filtro</string>
+    <string name="dash_filter_loading">Carregando reuniões para filtrar…</string>
+
+    <!-- Histórico do cliente -->
+    <string name="cli_eyebrow">HISTÓRICO DO CLIENTE</string>
+    <string name="cli_chart_title">Evolução do sentimento</string>
+    <string name="cli_chart_hint">Cada ponto é uma reunião analisada, da mais antiga à mais recente.</string>
+    <string name="cli_list_title">Reuniões</string>
+    <string name="cli_subtitle">%1$d reuniões analisadas</string>
+    <string name="cli_open">Histórico do cliente</string>
+    <string name="cli_stat_reunioes">Reuniões</string>
+    <string name="cli_stat_riscos">Riscos</string>
+    <string name="cli_stat_oportunidades">Oportunidades</string>
+    <string name="cli_stat_tendencia">Tendência</string>
+    <string name="cli_trend_up">Melhorando</string>
+    <string name="cli_trend_down">Piorando</string>
+    <string name="cli_trend_flat">Estável</string>
+
+    <!-- Alertas tratados -->
+    <string name="alert_treat">Tratar com comentário</string>
+    <string name="alert_treat_hint">O que foi feito? Ex.: liguei para o cliente e agendei visita.</string>
+    <string name="alert_treated">Tratado: %1$s</string>
+    <string name="alert_treated_ok">Alerta marcado como tratado.</string>
+
+    <!-- Fila offline -->
+    <string name="queue_offline">Sem conexão. A análise ficou na fila e será enviada assim que a internet voltar.</string>
+    <string name="queue_sent">%1$d análise(s) pendente(s) enviada(s).</string>
+    <string name="queue_pending">%1$d envio(s) aguardando conexão</string>
+    <string name="rev_queued_badge">Na fila</string>
+
+    <!-- Auditoria -->
+    <string name="sec_audit_title">Registro de atividades</string>
+    <string name="sec_audit_desc">O que este app fez com dados sensíveis neste aparelho. Fica só no celular.</string>
+    <string name="sec_audit_clear">Limpar</string>
+    <string name="sec_audit_empty">Nenhuma atividade registrada ainda.</string>
+
+    <!-- Widget e notificações -->
+    <string name="widget_title">TOTVS · INTELIGÊNCIA COMERCIAL</string>
+    <string name="widget_description">Riscos, oportunidades e alertas novos das reuniões analisadas.</string>
+    <string name="widget_riscos">Riscos</string>
+    <string name="widget_oportunidades">Oportunidades</string>
+    <string name="widget_alertas">Alertas novos</string>
+    <string name="widget_updated">Atualizado %1$s</string>
+    <string name="widget_login">Abra o app e faça login</string>
+    <string name="notif_channel_alertas">Alertas de reuniões</string>
+    <string name="notif_channel_alertas_desc">Avisa quando a IA gera um alerta importante.</string>
+    <string name="notif_alert_title">Novo alerta: %1$s</string>
+    <string name="notif_alerts_many">%1$d novos alertas de reuniões</string>
 </resources>

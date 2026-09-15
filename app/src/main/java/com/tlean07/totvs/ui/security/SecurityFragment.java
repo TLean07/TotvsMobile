@@ -54,6 +54,53 @@ public class SecurityFragment extends Fragment {
 
         renderDevice();
         binding.buttonRevoke.setOnClickListener(v -> confirmRevoke());
+        binding.securityAuditClear.setOnClickListener(v -> {
+            com.tlean07.totvs.security.AuditLog.get(requireContext()).clear();
+            renderAudit();
+        });
+        renderAudit();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (binding != null) {
+            renderAudit();
+        }
+    }
+
+    private void renderAudit() {
+        com.tlean07.totvs.util.AppExecutors.io(() -> {
+            java.util.List<com.tlean07.totvs.security.AuditLog.Entry> entries =
+                    com.tlean07.totvs.security.AuditLog.get(requireContext()).latest(20);
+            com.tlean07.totvs.util.AppExecutors.main(() -> {
+                if (binding == null) {
+                    return;
+                }
+                binding.securityAudit.removeAllViews();
+                float d = getResources().getDisplayMetrics().density;
+                if (entries.isEmpty()) {
+                    android.widget.TextView tv = new android.widget.TextView(requireContext());
+                    tv.setText(R.string.sec_audit_empty);
+                    tv.setTextSize(13f);
+                    tv.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.text_muted_light));
+                    binding.securityAudit.addView(tv);
+                    return;
+                }
+                java.text.SimpleDateFormat fmt = new java.text.SimpleDateFormat("dd/MM HH:mm", java.util.Locale.getDefault());
+                for (com.tlean07.totvs.security.AuditLog.Entry e : entries) {
+                    android.widget.TextView tv = new android.widget.TextView(requireContext());
+                    tv.setText(fmt.format(new java.util.Date(e.em)) + "  " + e.evento
+                            + (e.detalhe != null && !e.detalhe.isBlank() ? " · " + e.detalhe : ""));
+                    tv.setTextSize(12f);
+                    tv.setMaxLines(2);
+                    tv.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                    tv.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.text_secondary_light));
+                    tv.setPadding(0, (int) (4 * d), 0, (int) (4 * d));
+                    binding.securityAudit.addView(tv);
+                }
+            });
+        });
     }
 
     private void onBiometricToggle(boolean checked) {

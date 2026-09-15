@@ -239,6 +239,18 @@ public final class AudioPipeline {
         return diarizer.speakerCount();
     }
 
+    /** Aggregated voice profile per speaker (call after {@link #finish()}). */
+    public List<com.tlean07.totvs.audio.dsp.SpeakerProfile> speakerProfiles() {
+        return diarizer.speakerProfiles();
+    }
+
+    /** Every recognised word so far (for auto-labelling markers). */
+    public List<TranscriptWord> words() {
+        synchronized (lock) {
+            return new ArrayList<>(assembler.words());
+        }
+    }
+
     public Snapshot snapshot() {
         List<TranscriptTurn> turns;
         long[] talk;

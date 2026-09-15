@@ -6,6 +6,7 @@ import androidx.annotation.Nullable;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.tlean07.totvs.audio.RecorderSettings;
 import com.tlean07.totvs.util.Logger;
 
 import java.io.File;
@@ -19,8 +20,8 @@ import java.util.UUID;
 
 /**
  * Recordings live in {@code filesDir/gravacoes/<id>/} as {@code meta.json} plus
- * the audio (WAV while recording, M4A once finished). Nothing leaves the
- * device until the user sends the transcript or the audio for analysis.
+ * the audio (WAV while recording, M4A once finished, optionally encrypted).
+ * Nothing leaves the device until the user sends the transcript or the audio.
  */
 public final class RecordingStore {
 
@@ -29,11 +30,13 @@ public final class RecordingStore {
     private static final String META = "meta.json";
     private static final String TAG = "RecordingStore";
 
+    private final Context app;
     private final File root;
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     public RecordingStore(Context context) {
-        root = new File(context.getFilesDir(), "gravacoes");
+        app = context.getApplicationContext();
+        root = new File(app.getFilesDir(), "gravacoes");
     }
 
     public File dir(String id) {
@@ -49,16 +52,40 @@ public final class RecordingStore {
         return d;
     }
 
+    /**
+     * Playable/uploadable audio of a recording. Encrypted recordings are
+     * decrypted into the cache on demand – call {@link #releaseAudio} when done.
+     */
     public File audioFile(Recording r) {
         File d = dir(r.id);
-        if (r.audioArquivo != null) {
-            File f = new File(d, r.audioArquivo);
-            if (f.exists()) {
-                return f;
-            }
+        File stored = null;
+        if (r.audioArquivo != null && new File(d, r.audioArquivo).exists()) {
+            stored = new File(d, r.audioArquivo);
+        } else {
+            File enc = new File(d, M4A + RecordingCrypto.SUFFIX);
+            File m4a = new File(d, M4A);
+            stored = enc.exists() ? enc : m4a.exists() ? m4a : new File(d, WAV);
         }
-        File m4a = new File(d, M4A);
-        return m4a.exists() ? m4a : new File(d, WAV);
+        if (!stored.getName().endsWith(RecordingCrypto.SUFFIX)) {
+            return stored;
+        }
+        File plain = new File(new File(app.getCacheDir(), "play"), r.id + ".m4a");
+        if (plain.exists() && plain.length() > 0) {
+            return plain;
+        }
+        try {
+            return new RecordingCrypto(app).decrypt(stored, plain);
+        } catch (IOException e) {
+            Logger.w(TAG, "não foi possível decifrar o áudio: " + e.getMessage());
+            return stored;
+        }
+    }
+
+    /** Removes the decrypted copy made by {@link #audioFile}. */
+    public void releaseAudio(Recording r) {
+        File plain = new File(new File(app.getCacheDir(), "play"), r.id + ".m4a");
+        //noinspection ResultOfMethodCallIgnored
+        plain.delete();
     }
 
     public synchronized void save(Recording r) throws IOException {
@@ -93,8 +120,9 @@ public final class RecordingStore {
         }
     }
 
-    /** Newest first. */
+    /** Newest first; applies the retention setting (sent recordings older than N days are removed). */
     public synchronized List<Recording> list() {
+        purgeExpired();
         List<Recording> out = new ArrayList<>();
         File[] dirs = root.listFiles(File::isDirectory);
         if (dirs == null) {
@@ -108,6 +136,24 @@ public final class RecordingStore {
         }
         Collections.sort(out, (a, b) -> Long.compare(b.criadoEm, a.criadoEm));
         return out;
+    }
+
+    private void purgeExpired() {
+        int days = new RecorderSettings(app).retentionDays();
+        if (days <= 0) {
+            return;
+        }
+        long limit = System.currentTimeMillis() - days * 24L * 3600_000L;
+        File[] dirs = root.listFiles(File::isDirectory);
+        if (dirs == null) {
+            return;
+        }
+        for (File d : dirs) {
+            Recording r = load(d.getName());
+            if (r != null && Recording.STATUS_ENVIADA.equals(r.status) && r.criadoEm < limit) {
+                deleteRecursively(d);
+            }
+        }
     }
 
     public synchronized int count() {
@@ -125,6 +171,8 @@ public final class RecordingStore {
 
     public synchronized void delete(String id) {
         deleteRecursively(dir(id));
+        //noinspection ResultOfMethodCallIgnored
+        new File(new File(app.getCacheDir(), "play"), id + ".m4a").delete();
     }
 
     /** Directories without meta.json (crash while recording) – the caller may recover or drop them. */

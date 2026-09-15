@@ -84,6 +84,60 @@ public class DataRepository {
         cached(KEY_TRANSCRICAO + id, DEFAULT_TTL_MS, forceRefresh, api.transcricao(id), cb);
     }
 
+    /**
+     * Every transcription, fetched in pages of 100 so no single request hits the
+     * Render/Oracle latency wall; cached for {@value #INSIGHTS_TTL_MS} ms. Used
+     * by the local search/filters and the filtered dashboard.
+     */
+    public void transcricoesTodas(boolean forceRefresh, Callback<List<TranscricaoResponse>> cb) {
+        String key = KEY_TRANSCRICOES + ":todas:paginado";
+        if (!forceRefresh) {
+            List<TranscricaoResponse> hit = cache.get(key, INSIGHTS_TTL_MS);
+            if (hit != null) {
+                cb.onResult(NetworkResult.ok(hit));
+                return;
+            }
+        }
+        List<TranscricaoResponse> acc = new java.util.ArrayList<>();
+        carregarPagina(0, acc, key, cb);
+    }
+
+    private void carregarPagina(int page, List<TranscricaoResponse> acc, String key, Callback<List<TranscricaoResponse>> cb) {
+        carregarPagina(page, acc, key, cb, 1);
+    }
+
+    private void carregarPagina(int page, List<TranscricaoResponse> acc, String key, Callback<List<TranscricaoResponse>> cb, int retries) {
+        Calls.execute(api.transcricoesPaginadas(page, 100), result -> {
+            if (!result.success || result.data == null) {
+                if (retries > 0) {
+                    // Render/Oracle hiccups on one page must not throw the whole list away.
+                    carregarPagina(page, acc, key, cb, retries - 1);
+                    return;
+                }
+                cb.onResult(result.networkError ? NetworkResult.networkError(result.errorMessage) : NetworkResult.error(result.errorMessage));
+                return;
+            }
+            if (result.data.content != null) {
+                acc.addAll(result.data.content);
+            }
+            if (result.data.last || result.data.content == null || result.data.content.isEmpty() || page > 50) {
+                cache.put(key, acc);
+                cb.onResult(NetworkResult.ok(acc));
+            } else {
+                carregarPagina(page + 1, acc, key, cb);
+            }
+        });
+    }
+
+    public void transcricoesPorCliente(String cliente, Callback<List<TranscricaoResponse>> cb) {
+        Calls.execute(api.transcricoesPorCliente(cliente), cb);
+    }
+
+    /** Raw call for background workers (synchronous). */
+    public ApiService api() {
+        return api;
+    }
+
     public void feedbacks(String transcricaoId, Callback<List<com.tlean07.totvs.network.dto.AnaliseFeedbackResponse>> cb) {
         Calls.execute(api.feedbacks(transcricaoId), cb);
     }
@@ -222,6 +276,11 @@ public class DataRepository {
             }
             cb.onResult(result);
         });
+    }
+
+    /** Public hook for background senders (offline queue). */
+    public void invalidateTranscricoes() {
+        invalidateTranscricaoData();
     }
 
     /** Any change to transcriptions moves dashboard numbers, lists, insights and alerts. */

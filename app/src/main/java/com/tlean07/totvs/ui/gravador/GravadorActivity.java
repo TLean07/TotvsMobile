@@ -3,6 +3,7 @@ package com.tlean07.totvs.ui.gravador;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
@@ -10,6 +11,9 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -27,6 +31,7 @@ import com.tlean07.totvs.TotvsApp;
 import com.tlean07.totvs.audio.AudioPipeline;
 import com.tlean07.totvs.audio.MeetingRecorderService;
 import com.tlean07.totvs.audio.RecorderSession;
+import com.tlean07.totvs.audio.RecorderSettings;
 import com.tlean07.totvs.audio.asr.TranscriptFormatter;
 import com.tlean07.totvs.audio.asr.VoskModelManager;
 import com.tlean07.totvs.audio.dsp.SpeakerDiarizer;
@@ -37,17 +42,19 @@ import com.tlean07.totvs.util.SafeAreaHelper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Live meeting recorder: clock, waveform coloured by speaker, "who is talking"
- * chips and a live transcript, driven by the {@link RecorderSession} owned by
- * the foreground service (so the screen can rotate or turn off).
+ * chips (tap to name), live transcript and the on-device LeanIA signals,
+ * driven by the {@link RecorderSession} owned by the foreground service.
  */
 public class GravadorActivity extends AppCompatActivity implements RecorderSession.Listener, VoskModelManager.Listener {
 
     private ActivityGravadorBinding binding;
     private TurnoAdapter adapter;
     private VoskModelManager models;
+    private RecorderSettings settings;
     @Nullable
     private RecorderSession session;
     private int currentSpeaker = -1;
@@ -78,6 +85,7 @@ public class GravadorActivity extends AppCompatActivity implements RecorderSessi
         SafeAreaHelper.applyBottomInset(binding.gravControls);
 
         models = VoskModelManager.get(this);
+        settings = new RecorderSettings(this);
         adapter = new TurnoAdapter(null);
         binding.gravTranscript.setLayoutManager(new LinearLayoutManager(this));
         binding.gravTranscript.setAdapter(adapter);
@@ -86,7 +94,11 @@ public class GravadorActivity extends AppCompatActivity implements RecorderSessi
         binding.gravBack.setOnClickListener(v -> getOnBackPressedDispatcher().onBackPressed());
         binding.gravMain.setOnClickListener(v -> onMainButton());
         binding.gravStop.setOnClickListener(v -> confirmStop());
-        binding.gravMarker.setOnClickListener(v -> addMarker());
+        binding.gravMarker.setOnClickListener(v -> addMarker(null));
+        binding.gravMarker.setOnLongClickListener(v -> {
+            askMarkerLabel();
+            return true;
+        });
         binding.gravAsrButton.setOnClickListener(v -> onAsrButton());
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
@@ -141,12 +153,44 @@ public class GravadorActivity extends AppCompatActivity implements RecorderSessi
 
     private void onMainButton() {
         if (session == null || !session.isActive()) {
-            ensurePermissionsThenStart();
+            if (settings.consentAccepted()) {
+                ensurePermissionsThenStart();
+            } else {
+                showConsent();
+            }
         } else if (session.state() == RecorderSession.State.RECORDING) {
             session.pause();
         } else if (session.state() == RecorderSession.State.PAUSED) {
             session.resume();
         }
+    }
+
+    /** LGPD notice shown before the first recording (and until the user opts out). */
+    private void showConsent() {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        int pad = (int) (22 * getResources().getDisplayMetrics().density);
+        box.setPadding(pad, pad / 2, pad, 0);
+        TextView msg = new TextView(this);
+        msg.setText(R.string.consent_message);
+        msg.setTextColor(ContextCompat.getColor(this, R.color.text_primary_light));
+        msg.setTextSize(14f);
+        box.addView(msg);
+        CheckBox remember = new CheckBox(this);
+        remember.setText(R.string.consent_remember);
+        remember.setPadding(0, pad / 2, 0, 0);
+        box.addView(remember);
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.consent_title)
+                .setView(box)
+                .setPositiveButton(R.string.consent_accept, (d, w) -> {
+                    if (remember.isChecked()) {
+                        settings.setConsentAccepted(true);
+                    }
+                    ensurePermissionsThenStart();
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
     }
 
     private void ensurePermissionsThenStart() {
@@ -168,9 +212,10 @@ public class GravadorActivity extends AppCompatActivity implements RecorderSessi
     private void startRecording() {
         navigatedToReview = false;
         adapter.submit(new ArrayList<>());
+        adapter.setNames(new ArrayList<>());
         binding.gravWave.clear();
+        binding.gravLiveCard.setVisibility(View.GONE);
         MeetingRecorderService.start(this);
-        // The service creates the session synchronously in onStartCommand; poll once it exists.
         binding.getRoot().postDelayed(this::attachWhenReady, 150);
     }
 
@@ -213,13 +258,57 @@ public class GravadorActivity extends AppCompatActivity implements RecorderSessi
                 .show();
     }
 
-    private void addMarker() {
+    private void addMarker(@Nullable String label) {
         if (session == null || !session.isActive()) {
             return;
         }
-        session.addMarker(null);
+        session.addMarker(label);
         Toast.makeText(this, getString(R.string.grav_marker_added,
                 TranscriptFormatter.formatClock(session.positionMs())), Toast.LENGTH_SHORT).show();
+    }
+
+    private void askMarkerLabel() {
+        if (session == null || !session.isActive()) {
+            return;
+        }
+        EditText input = new EditText(this);
+        input.setHint(R.string.grav_marker_label_hint);
+        input.setSingleLine(true);
+        int pad = (int) (22 * getResources().getDisplayMetrics().density);
+        LinearLayout wrap = new LinearLayout(this);
+        wrap.setPadding(pad, 0, pad, 0);
+        wrap.addView(input, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.grav_marker_label_title)
+                .setMessage(R.string.grav_marker_tip)
+                .setView(wrap)
+                .setPositiveButton(R.string.grav_marker, (d, w) -> addMarker(input.getText().toString()))
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void renameSpeaker(int speaker) {
+        if (session == null) {
+            return;
+        }
+        EditText input = new EditText(this);
+        input.setHint(R.string.grav_rename_hint);
+        input.setSingleLine(true);
+        String current = session.nomes().get(speaker);
+        if (current != null) {
+            input.setText(current);
+            input.setSelection(current.length());
+        }
+        int pad = (int) (22 * getResources().getDisplayMetrics().density);
+        LinearLayout wrap = new LinearLayout(this);
+        wrap.setPadding(pad, 0, pad, 0);
+        wrap.addView(input, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        new AlertDialog.Builder(this)
+                .setTitle(getString(R.string.grav_rename_title) + " · " + TranscriptFormatter.defaultName(speaker))
+                .setView(wrap)
+                .setPositiveButton(R.string.save, (d, w) -> session.setSpeakerName(speaker, input.getText().toString()))
+                .setNegativeButton(R.string.cancel, null)
+                .show();
     }
 
     private void onAsrButton() {
@@ -318,6 +407,7 @@ public class GravadorActivity extends AppCompatActivity implements RecorderSessi
         currentSpeaker = snapshot.currentSpeaker;
         speaking = snapshot.speaking;
         speakerCount = snapshot.speakerCount;
+        adapter.setNames(namesList(snapshot.speakerCount));
         adapter.submit(snapshot.turns);
         if (!snapshot.turns.isEmpty()) {
             binding.gravTranscriptEmpty.setVisibility(View.GONE);
@@ -346,6 +436,63 @@ public class GravadorActivity extends AppCompatActivity implements RecorderSessi
     @Override
     public void onFinishProgress(int percent) {
         binding.gravOverlayText.setText(getString(R.string.grav_finishing, percent));
+    }
+
+    @Override
+    public void onLiveInsights(Recording.AnaliseLocal a) {
+        if (a == null) {
+            return;
+        }
+        binding.gravLiveCard.setVisibility(View.VISIBLE);
+        binding.gravLiveSentimento.setText(sentimentoLabel(a.sentimentoGeral));
+        int color = sentimentoColor(a.sentimentoGeral);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setCornerRadius(999f);
+        bg.setColor((ContextCompat.getColor(this, color) & 0x00FFFFFF) | 0x22000000);
+        binding.gravLiveSentimento.setBackground(bg);
+        binding.gravLiveSentimento.setTextColor(ContextCompat.getColor(this, color));
+        binding.gravLiveCounters.setText(getString(R.string.live_counters, a.riscos.size(), a.oportunidades.size(), a.alertas.size()));
+
+        LinearLayout items = binding.gravLiveItems;
+        items.removeAllViews();
+        int shown = 0;
+        for (int i = a.riscos.size() - 1; i >= 0 && shown < 2; i--, shown++) {
+            Recording.Sinal s = a.riscos.get(i);
+            addLiveLine(items, "▲ " + getString(R.string.live_risco) + " " + label(s.tipo) + ": " + s.texto, R.color.totvs_danger);
+        }
+        for (int i = a.oportunidades.size() - 1; i >= 0 && shown < 4; i--, shown++) {
+            Recording.Sinal s = a.oportunidades.get(i);
+            addLiveLine(items, "● " + getString(R.string.live_oportunidade) + " " + label(s.tipo) + ": " + s.texto, R.color.totvs_accent);
+        }
+        if (!a.concorrentes.isEmpty()) {
+            addLiveLine(items, getString(R.string.live_concorrente, String.join(", ", a.concorrentes)), R.color.totvs_warning);
+        }
+        if (a.budget != null && !a.budget.isBlank() && !a.budget.toLowerCase(Locale.ROOT).contains("nao identificado")
+                && !a.budget.toLowerCase(Locale.ROOT).contains("não identificado")) {
+            addLiveLine(items, getString(R.string.live_budget, a.budget), R.color.speaker_3);
+        }
+        if (a.proximaAcao != null && !a.proximaAcao.isBlank()) {
+            addLiveLine(items, getString(R.string.live_acao, a.proximaAcao), R.color.speaker_1);
+        }
+    }
+
+    private void addLiveLine(LinearLayout parent, String text, int colorRes) {
+        TextView tv = new TextView(this);
+        tv.setText(text);
+        tv.setTextSize(12f);
+        tv.setMaxLines(2);
+        tv.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        tv.setTextColor(ContextCompat.getColor(this, colorRes));
+        tv.setPadding(0, (int) (2 * getResources().getDisplayMetrics().density), 0, 0);
+        parent.addView(tv);
+    }
+
+    private static String label(@Nullable String tipo) {
+        if (tipo == null) {
+            return "";
+        }
+        String t = tipo.toLowerCase(Locale.ROOT).replace('_', ' ');
+        return t.isEmpty() ? t : Character.toUpperCase(t.charAt(0)) + t.substring(1);
     }
 
     // --- model status ---
@@ -393,6 +540,7 @@ public class GravadorActivity extends AppCompatActivity implements RecorderSessi
         binding.gravStop.setEnabled(false);
         binding.gravMarker.setEnabled(false);
         binding.gravAsrCard.setVisibility(View.VISIBLE);
+        binding.gravLiveCard.setVisibility(View.GONE);
         binding.gravSpeaking.setText(R.string.grav_nobody);
         binding.gravSpeakingDot.getBackground().setTint(ContextCompat.getColor(this, R.color.speaker_unknown));
         binding.gravAsrLag.setVisibility(View.GONE);
@@ -411,6 +559,19 @@ public class GravadorActivity extends AppCompatActivity implements RecorderSessi
         }
     }
 
+    private List<String> namesList(int count) {
+        List<String> names = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            names.add(speakerName(i));
+        }
+        return names;
+    }
+
+    private String speakerName(int i) {
+        String n = session == null ? null : session.nomes().get(i);
+        return n == null || n.isBlank() ? TranscriptFormatter.defaultName(i) : n;
+    }
+
     private void renderSpeakers(AudioPipeline.Snapshot s) {
         if (!s.speaking) {
             binding.gravSpeaking.setText(R.string.grav_nobody);
@@ -419,7 +580,7 @@ public class GravadorActivity extends AppCompatActivity implements RecorderSessi
             binding.gravSpeaking.setText(R.string.grav_someone);
             binding.gravSpeakingDot.getBackground().setTint(ContextCompat.getColor(this, R.color.speaker_unknown));
         } else {
-            binding.gravSpeaking.setText(getString(R.string.grav_speaking_now, TranscriptFormatter.defaultName(s.currentSpeaker)));
+            binding.gravSpeaking.setText(getString(R.string.grav_speaking_now, speakerName(s.currentSpeaker)));
             binding.gravSpeakingDot.getBackground().setTint(SpeakerColors.of(this, s.currentSpeaker));
         }
         binding.gravSpeakers.removeAllViews();
@@ -442,15 +603,17 @@ public class GravadorActivity extends AppCompatActivity implements RecorderSessi
             chip.setBackground(bg);
             chip.setTextColor(active ? 0xFFFFFFFF : color);
             chip.setTextSize(12f);
-            chip.setTypeface(null, android.graphics.Typeface.BOLD);
+            chip.setTypeface(null, Typeface.BOLD);
             int pad = (int) (10 * getResources().getDisplayMetrics().density);
             int padV = (int) (5 * getResources().getDisplayMetrics().density);
             chip.setPadding(pad, padV, pad, padV);
             long ms = i < s.talkTimeMs.length ? s.talkTimeMs[i] : 0;
             int pct = total == 0 ? 0 : (int) (ms * 100 / total);
-            chip.setText(TranscriptFormatter.defaultName(i) + " · " + pct + "%");
-            android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
-                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+            chip.setText(speakerName(i) + " · " + pct + "%");
+            final int idx = i;
+            chip.setOnClickListener(v -> renameSpeaker(idx));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
             lp.setMarginEnd((int) (6 * getResources().getDisplayMetrics().density));
             binding.gravSpeakers.addView(chip, lp);
         }
@@ -462,5 +625,39 @@ public class GravadorActivity extends AppCompatActivity implements RecorderSessi
         hint.setTextColor(ContextCompat.getColor(this, R.color.text_muted_light));
         hint.setTextSize(12f);
         binding.gravSpeakers.addView(hint);
+    }
+
+    static String sentimentoLabel(@Nullable String s) {
+        if (s == null) {
+            return "—";
+        }
+        switch (s.toUpperCase(Locale.ROOT)) {
+            case "POSITIVO":
+                return "Positivo";
+            case "NEGATIVO":
+                return "Negativo";
+            case "MISTO":
+                return "Misto";
+            case "NEUTRO":
+                return "Neutro";
+            default:
+                return s;
+        }
+    }
+
+    static int sentimentoColor(@Nullable String s) {
+        if (s == null) {
+            return R.color.speaker_unknown;
+        }
+        switch (s.toUpperCase(Locale.ROOT)) {
+            case "POSITIVO":
+                return R.color.totvs_accent;
+            case "NEGATIVO":
+                return R.color.totvs_danger;
+            case "MISTO":
+                return R.color.totvs_warning;
+            default:
+                return R.color.speaker_unknown;
+        }
     }
 }

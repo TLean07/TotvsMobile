@@ -72,9 +72,17 @@ public final class FileTranscriber {
                         pct -> AppExecutors.main(() -> listener.onProgress(0, pct)));
                 AppExecutors.main(() -> listener.onProgress(1, 0));
                 List<TranscriptTurn> turns = pipeline.finish();
-                String titulo = displayName == null ? null : stripExtension(displayName);
-                Recording r = RecordingFinalizer.finish(store, dir, pipeline, turns, "arquivo", modelo, new ArrayList<>(),
-                        titulo, pct -> AppExecutors.main(() -> listener.onProgress(1, pct)));
+                RecordingFinalizer.Extras extras = new RecordingFinalizer.Extras();
+                extras.origem = "arquivo";
+                extras.modeloAsr = modelo;
+                extras.titulo = displayName == null ? null : stripExtension(displayName);
+                com.tlean07.totvs.network.dto.AuthUser user = com.tlean07.totvs.TotvsApp.get().session().getCurrentUser();
+                extras.userId = user == null ? null : user.id;
+                extras.insights = new LiveInsights((a, b) -> { });
+                Recording r = RecordingFinalizer.finish(app, store, dir, pipeline, turns, extras,
+                        pct -> AppExecutors.main(() -> listener.onProgress(1, pct)));
+                extras.insights.close();
+                com.tlean07.totvs.security.AuditLog.get(app).record("gravacao.importada", r.id + " · " + extras.titulo);
                 AppExecutors.main(() -> {
                     listener.onProgress(2, 100);
                     listener.onDone(r);

@@ -146,6 +146,14 @@
             android:textColor="@color/totvs_primary" />
     </LinearLayout>
 
+    <include
+        android:id="@+id/anaSkeleton"
+        layout="@layout/view_skeleton"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="150dp"
+        android:visibility="gone" />
+
     <ProgressBar
         android:id="@+id/anaProgress"
         android:layout_width="wrap_content"

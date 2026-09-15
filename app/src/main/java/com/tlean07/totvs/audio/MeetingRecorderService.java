@@ -166,7 +166,9 @@ public class MeetingRecorderService extends Service {
         NotificationCompat.Builder b = new NotificationCompat.Builder(this, CHANNEL)
                 .setSmallIcon(R.drawable.ic_mic)
                 .setContentTitle(title)
-                .setContentText(getString(R.string.grav_notif_text))
+                .setContentText(s != null && state == RecorderSession.State.RECORDING && s.asrLagSeconds() >= 3
+                        ? getString(R.string.grav_asr_behind, s.asrLagSeconds())
+                        : getString(R.string.grav_notif_text))
                 .setContentIntent(content)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
