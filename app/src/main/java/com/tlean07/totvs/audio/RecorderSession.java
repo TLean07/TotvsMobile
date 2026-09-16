@@ -136,6 +136,12 @@ public final class RecorderSession {
     }
 
     /** Seconds the recogniser is behind the audio (0 when idle / keeping up). */
+    /** Label of the microphone delivering audio ("" while unknown). */
+    public String microphoneName() {
+        AudioCapture c = capture;
+        return c == null ? "" : c.routedName();
+    }
+
     public int asrLagSeconds() {
         AudioPipeline.Snapshot s = lastSnapshot;
         return s == null ? 0 : (int) (s.asrBacklog * 40L / 1000);

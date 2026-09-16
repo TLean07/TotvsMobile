@@ -590,7 +590,9 @@ public class GravadorActivity extends AppCompatActivity implements RecorderSessi
         String clock = TranscriptFormatter.formatClock(positionMs);
         binding.gravClock.setText(clock);
         if (session != null && session.state() == RecorderSession.State.RECORDING) {
-            binding.gravSubtitle.setText(getString(R.string.grav_subtitle_recording, clock));
+            String mic = session != null ? session.microphoneName() : "";
+            binding.gravSubtitle.setText(mic.isEmpty() ? getString(R.string.grav_subtitle_recording, clock)
+                    : getString(R.string.grav_subtitle_recording_mic, clock, mic));
         }
     }
 

@@ -58,6 +58,9 @@ public final class AudioCapture {
     private volatile boolean muted;
     private int sampleRate;
     private String sourceName = "?";
+    @Nullable
+    private android.media.AudioDeviceInfo preferred;
+    private String routedName = "";
 
     public int sampleRate() {
         return sampleRate;
@@ -66,6 +69,11 @@ public final class AudioCapture {
     /** Which microphone path was opened (for diagnostics). */
     public String sourceName() {
         return sourceName;
+    }
+
+    /** Human label of the device actually delivering audio (empty until known). */
+    public String routedName() {
+        return routedName;
     }
 
     /** True while the sink receives silence-free audio; {@link #setMuted} drops chunks during a pause. */
@@ -118,6 +126,20 @@ public final class AudioCapture {
         }
         record = opened;
         sampleRate = rate;
+        // the microphone the user chose in the settings, when it is still around
+        try {
+            android.content.Context app = com.tlean07.totvs.TotvsApp.get();
+            preferred = InputDevices.resolve(app, new RecorderSettings(app).inputDevice());
+            if (preferred != null) {
+                InputDevices.route(app, preferred);
+                if (!record.setPreferredDevice(preferred)) {
+                    Logger.w(TAG, "setPreferredDevice recusado: " + InputDevices.label(preferred));
+                }
+            }
+        } catch (RuntimeException e) {
+            Logger.w(TAG, "dispositivo preferido indisponível: " + e.getMessage());
+            preferred = null;
+        }
         try {
             if (android.media.audiofx.AutomaticGainControl.isAvailable()) {
                 agc = android.media.audiofx.AutomaticGainControl.create(record.getAudioSessionId());
@@ -140,6 +162,8 @@ public final class AudioCapture {
             throw new IOException("O microfone está em uso por outro aplicativo.");
         }
         running = true;
+        record.addOnRoutingChangedListener((android.media.AudioRouting r) -> updateRouted(), null);
+        updateRouted();
         thread = new Thread(() -> {
             Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO);
             short[] in = new short[chunk];
@@ -182,6 +206,20 @@ public final class AudioCapture {
         }, "audio-capture");
         thread.start();
         Logger.d(TAG, "microfone " + sourceName + " a " + rate + " Hz, buffer " + bufferSize + " bytes");
+    }
+
+    private void updateRouted() {
+        AudioRecord r = record;
+        if (r == null) {
+            return;
+        }
+        try {
+            android.media.AudioDeviceInfo d = r.getRoutedDevice();
+            routedName = d == null ? "" : InputDevices.label(d);
+            Logger.d(TAG, "rota de entrada: " + (routedName.isEmpty() ? "?" : routedName));
+        } catch (RuntimeException ignored) {
+            // not available on this device
+        }
     }
 
     private static int[] candidateSources() {
@@ -236,6 +274,10 @@ public final class AudioCapture {
     }
 
     private void release() {
+        if (preferred != null) {
+            InputDevices.unroute(com.tlean07.totvs.TotvsApp.get(), preferred);
+            preferred = null;
+        }
         if (agc != null) {
             try {
                 agc.release();

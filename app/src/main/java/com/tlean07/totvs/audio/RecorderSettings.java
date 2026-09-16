@@ -18,6 +18,15 @@ public final class RecorderSettings {
         prefs = context.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }
 
+    /** Key of the chosen input device ({@link InputDevices#AUTO} = let Android pick). */
+    public String inputDevice() {
+        return prefs.getString("microfone", InputDevices.AUTO);
+    }
+
+    public void setInputDevice(String key) {
+        prefs.edit().putString("microfone", key == null ? InputDevices.AUTO : key).apply();
+    }
+
     public int bitrate() {
         return prefs.getInt("bitrate", 64_000);
     }

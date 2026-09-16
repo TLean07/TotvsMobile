@@ -58,6 +58,7 @@
     <string name="grav_subtitle_idle">Grave a conversa: a IA identifica quem fala e transcreve no celular.</string>
     <string name="grav_subtitle_preparing">Preparando o microfone…</string>
     <string name="grav_subtitle_recording">Gravando · %1$s</string>
+    <string name="grav_subtitle_recording_mic">Gravando · %1$s · %2$s</string>
     <string name="grav_subtitle_paused">Pausado · %1$s</string>
     <string name="grav_subtitle_finishing">Finalizando a gravação…</string>
     <string name="grav_start">Iniciar gravação</string>
@@ -322,6 +323,10 @@
     <string name="grav_marker_label_hint">Ex.: objeção de preço</string>
     <string name="grav_marker_tip">Toque: marca o momento e usa o que foi dito em seguida como rótulo. Segure: digite o rótulo.</string>
     <string name="cfg_title">Configurações da gravação</string>
+    <string name="cfg_microphone">Microfone</string>
+    <string name="cfg_mic_auto">Automático (recomendado)</string>
+    <string name="cfg_mic_missing">Dispositivo escolhido não está conectado</string>
+    <string name="cfg_mic_hint">Conecte o fone, o microfone USB ou o Bluetooth antes de abrir esta tela para ele aparecer na lista.</string>
     <string name="cfg_quality">Qualidade do áudio</string>
     <string name="cfg_retention">Apagar gravações já enviadas</string>
     <string name="cfg_encrypt">Criptografar gravações no celular</string>

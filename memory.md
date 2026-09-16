@@ -326,3 +326,8 @@ Facts learned while tuning (TTS dialogues Antonio/Francisca/Duarte/Thalita via e
   64 kbps (opções 32/64/128). `OfflineDiarizer` usa todos os frames de fala quando < 30 % têm pitch.
 - "Exportar áudio" no menu da revisão (copia para cache/export e compartilha) — serve para o
   usuário me mandar uma gravação real para ajustar a separação.
+- Escolha de microfone (2026-09-16): `audio/InputDevices` lista `AudioManager.getDevices(INPUTS)`
+  com rótulos em pt (celular/fone com fio/USB/Bluetooth), chave estável tipo|endereço|produto salva em
+  `RecorderSettings.inputDevice`; `AudioCapture` aplica `setPreferredDevice`, roteia Bluetooth
+  (`setCommunicationDevice` no 12+, SCO antes) e mostra a rota real no subtítulo do gravador.
+  Spinner "Microfone" no diálogo de configurações; permissões BLUETOOTH_CONNECT e MODIFY_AUDIO_SETTINGS.

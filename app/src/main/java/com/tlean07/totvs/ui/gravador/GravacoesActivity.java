@@ -139,10 +139,42 @@ public class GravacoesActivity extends AppCompatActivity {
     }
 
     private void showSettings() {
+        // Bluetooth headset names need this permission on Android 12+; ask once, the dialog reopens fine
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S
+                && androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_CONNECT)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED && !btAsked) {
+            btAsked = true;
+            androidx.core.app.ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.BLUETOOTH_CONNECT}, 41);
+        }
         float d = getResources().getDisplayMetrics().density;
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding((int) (22 * d), (int) (8 * d), (int) (22 * d), 0);
+
+        box.addView(label(R.string.cfg_microphone));
+        Spinner mic = new Spinner(this);
+        java.util.List<com.tlean07.totvs.audio.InputDevices.Choice> devices = com.tlean07.totvs.audio.InputDevices.list(this);
+        java.util.List<String> micLabels = new java.util.ArrayList<>();
+        micLabels.add(getString(R.string.cfg_mic_auto));
+        int micSelected = 0;
+        for (int i = 0; i < devices.size(); i++) {
+            micLabels.add(devices.get(i).label);
+            if (devices.get(i).key.equals(settings.inputDevice())) {
+                micSelected = i + 1;
+            }
+        }
+        if (micSelected == 0 && !settings.inputDevice().isEmpty()) {
+            micLabels.add(getString(R.string.cfg_mic_missing));
+            micSelected = micLabels.size() - 1;
+        }
+        mic.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, micLabels));
+        mic.setSelection(micSelected);
+        box.addView(mic);
+        TextView micHint = new TextView(this);
+        micHint.setText(R.string.cfg_mic_hint);
+        micHint.setTextSize(12f);
+        micHint.setTextColor(ContextCompat.getColor(this, R.color.text_muted_light));
+        box.addView(micHint);
 
         box.addView(label(R.string.cfg_quality));
         Spinner quality = new Spinner(this);
@@ -182,6 +214,12 @@ public class GravacoesActivity extends AppCompatActivity {
                 .setTitle(R.string.cfg_title)
                 .setView(box)
                 .setPositiveButton(R.string.save, (dlg, w) -> {
+                    int m = mic.getSelectedItemPosition();
+                    if (m == 0) {
+                        settings.setInputDevice(com.tlean07.totvs.audio.InputDevices.AUTO);
+                    } else if (m - 1 < devices.size()) {
+                        settings.setInputDevice(devices.get(m - 1).key);
+                    } // "missing" entry keeps the stored choice
                     settings.setBitrate(RecorderSettings.BITRATES[quality.getSelectedItemPosition()]);
                     settings.setRetentionDays(RecorderSettings.RETENTION_DAYS[retention.getSelectedItemPosition()]);
                     settings.setEncryptAtRest(encrypt.isChecked());
@@ -198,6 +236,8 @@ public class GravacoesActivity extends AppCompatActivity {
         }
         b.show();
     }
+
+    private boolean btAsked;
 
     private TextView label(int res) {
         TextView tv = new TextView(this);
