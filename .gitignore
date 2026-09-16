@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# fetched by app/build.gradle (downloadSherpaOnnx)
+app/libs/*.aar

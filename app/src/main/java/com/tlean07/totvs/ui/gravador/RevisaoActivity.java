@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.google.android.material.chip.Chip;
 import com.tlean07.totvs.R;
+import com.tlean07.totvs.audio.VoiceModels;
 import com.tlean07.totvs.TotvsApp;
 import com.tlean07.totvs.audio.asr.TranscriptFormatter;
 import com.tlean07.totvs.audio.asr.TranscriptTurn;
@@ -145,7 +146,7 @@ public class RevisaoActivity extends AppCompatActivity {
         super.onDestroy();
         dismissProgress();
         if (modelListener != null) {
-            com.tlean07.totvs.audio.asr.VoskModelManager.get(this).removeListener(modelListener);
+            VoiceModels.get(this).removeListener(modelListener);
             modelListener = null;
         }
     }
@@ -183,7 +184,7 @@ public class RevisaoActivity extends AppCompatActivity {
             binding.revTranscriptHint.setText(R.string.rev_transcript_hint);
         } else if (rec.modeloAsr == null) {
             binding.revTranscriptHint.setText(getString(R.string.rev_transcript_none_model,
-                    com.tlean07.totvs.audio.asr.VoskModelManager.MODEL_SIZE_MB));
+                    VoiceModels.MODEL_SIZE_MB));
         } else {
             binding.revTranscriptHint.setText(R.string.rev_transcript_none_empty);
         }
@@ -195,7 +196,7 @@ public class RevisaoActivity extends AppCompatActivity {
     // --- transcribe again (voice model missing at recording time, or no text captured) ---
 
     @Nullable
-    private com.tlean07.totvs.audio.asr.VoskModelManager.Listener modelListener;
+    private VoiceModels.Listener modelListener;
     @Nullable
     private AlertDialog progressDialog;
 
@@ -203,14 +204,14 @@ public class RevisaoActivity extends AppCompatActivity {
         if (rec == null || transcribing) {
             return;
         }
-        com.tlean07.totvs.audio.asr.VoskModelManager models = com.tlean07.totvs.audio.asr.VoskModelManager.get(this);
+        VoiceModels models = VoiceModels.get(this);
         if (models.isReady()) {
             runRetranscribe();
             return;
         }
         new AlertDialog.Builder(this)
                 .setTitle(R.string.rev_model_prompt_title)
-                .setMessage(getString(R.string.rev_model_prompt_message, com.tlean07.totvs.audio.asr.VoskModelManager.MODEL_SIZE_MB))
+                .setMessage(getString(R.string.rev_model_prompt_message, VoiceModels.MODEL_SIZE_MB))
                 .setPositiveButton(R.string.rev_model_prompt_download, (d, w) -> downloadThenRetranscribe(models))
                 .setNegativeButton(R.string.cancel, null)
                 .show();
@@ -218,7 +219,7 @@ public class RevisaoActivity extends AppCompatActivity {
 
     private boolean transcribing;
 
-    private void downloadThenRetranscribe(com.tlean07.totvs.audio.asr.VoskModelManager models) {
+    private void downloadThenRetranscribe(VoiceModels models) {
         showProgress(getString(R.string.rev_transcribe_download, 0));
         modelListener = (status, progress, message) -> {
             switch (status) {
@@ -243,13 +244,13 @@ public class RevisaoActivity extends AppCompatActivity {
             }
         };
         models.addListener(modelListener);
-        if (models.status() != com.tlean07.totvs.audio.asr.VoskModelManager.Status.DOWNLOADING
-                && models.status() != com.tlean07.totvs.audio.asr.VoskModelManager.Status.UNPACKING) {
+        if (models.status() != VoiceModels.Status.DOWNLOADING
+                && models.status() != VoiceModels.Status.UNPACKING) {
             models.download();
         }
     }
 
-    private void detachModelListener(com.tlean07.totvs.audio.asr.VoskModelManager models) {
+    private void detachModelListener(VoiceModels models) {
         if (modelListener != null) {
             models.removeListener(modelListener);
             modelListener = null;

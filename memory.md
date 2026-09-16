@@ -331,3 +331,20 @@ Facts learned while tuning (TTS dialogues Antonio/Francisca/Duarte/Thalita via e
   `RecorderSettings.inputDevice`; `AudioCapture` aplica `setPreferredDevice`, roteia Bluetooth
   (`setCommunicationDevice` no 12+, SCO antes) e mostra a rota real no subtítulo do gravador.
   Spinner "Microfone" no diálogo de configurações; permissões BLUETOOTH_CONNECT e MODIFY_AUDIO_SETTINGS.
+
+## Separação de vozes por rede neural (2026-09-16)
+- Usuário: "todo homem dá pessoa 1… use APIs que já existem". Integrado **sherpa-onnx 1.13.8**
+  (AAR de 50 MB baixado pelo Gradle em `app/libs`, gitignored; task `downloadSherpaOnnx`):
+  segmentação pyannote 3.0 (asset `diarization/segmentation.onnx`, 6 MB) + embedding WeSpeaker
+  ResNet34-LM (26 MB, `DiarizationModels` baixa do release do sherpa) + clustering do sherpa
+  (threshold 0,35). `NeuralDiarizer.run(wav16k, frames)` → segmentos; `SpeakerDiarizer.adopt`.
+  `VoiceModels` agrega Vosk + modelos de vozes para a UI (58 MB no total).
+- Avaliação no corpus TTS (PC, `harness/eval_sherpa.py`): WeSpeaker-LM 0,35 = 87,0 % (DSP: 86,6 %);
+  3D-Speaker/CAM++/SpeakerNet piores. Vozes TTS não representam vozes reais; o ganho esperado é em
+  gravações reais. Fallback: se os modelos não estão instalados ou falham → passada DSP.
+- Armadilhas: `processWithCallback` espera lambda Kotlin `(Int,Int,Long)->Int` (JNI procura
+  `invoke(IIJ)`), de Java crasha com SIGABRT → usar `process()`. `largeHeap` no manifest (áudio inteiro
+  em float: 15 min = 58 MB); acima de 15 min processa em blocos ligados por perfil DSP. Vozes com
+  < 12 % / < 20 s são absorvidas pela voz de perfil mais próximo. APK arm64 ≈ 57 MB (onnxruntime) —
+  acima do limite de 30 MB do chat: entregar por release no GitHub.
+- Emulador x86_64: 58 s de áudio → 10 s de passada neural.

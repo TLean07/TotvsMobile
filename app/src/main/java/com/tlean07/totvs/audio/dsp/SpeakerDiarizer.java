@@ -366,6 +366,65 @@ public final class SpeakerDiarizer implements FeatureExtractor.Listener {
         return new OfflineDiarizer(in.frames, in.segments, in.from, in.to, in.liveSpeakers).run();
     }
 
+    /** Every speech frame heard so far (read-only use; the audio thread keeps adding). */
+    public FrameStore frames() {
+        return frames;
+    }
+
+    /**
+     * Replaces the segmentation with one computed elsewhere (the neural models),
+     * deriving the voice profiles and the live→final map from it.
+     */
+    public void adopt(List<SpeakerSegment> external) {
+        int n = 0;
+        for (SpeakerSegment s : external) {
+            n = Math.max(n, s.speaker + 1);
+        }
+        List<SpeakerProfile> profiles = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            profiles.add(new SpeakerProfile());
+        }
+        int idx = 0;
+        for (int f = 0; f < frames.size(); f++) {
+            long t = frames.timeMs(f);
+            while (idx < external.size() && external.get(idx).endMs <= t) {
+                idx++;
+            }
+            if (idx < external.size() && external.get(idx).startMs <= t && external.get(idx).speaker < n) {
+                frames.addTo(profiles.get(external.get(idx).speaker), f);
+            }
+        }
+        int liveSpeakers = Math.max(1, clusterer.speakerCount());
+        long[][] overlap = new long[liveSpeakers][Math.max(1, n)];
+        for (SpeakerSegment a : segments) {
+            if (a.speaker < 0 || a.speaker >= liveSpeakers) {
+                continue;
+            }
+            for (SpeakerSegment b : external) {
+                long ov = Math.min(a.endMs, b.endMs) - Math.max(a.startMs, b.startMs);
+                if (ov > 0 && b.speaker < n) {
+                    overlap[a.speaker][b.speaker] += ov;
+                }
+            }
+        }
+        int[] liveToFinal = new int[liveSpeakers];
+        for (int i = 0; i < liveSpeakers; i++) {
+            int best = -1;
+            long bv = 0;
+            for (int j = 0; j < n; j++) {
+                if (overlap[i][j] > bv) {
+                    bv = overlap[i][j];
+                    best = j;
+                }
+            }
+            liveToFinal[i] = best;
+        }
+        refined = new OfflineDiarizer.Result(new ArrayList<>(external), n, liveToFinal, profiles);
+        segments.clear();
+        segments.addAll(external);
+        speakerCountAfterRefine = n;
+    }
+
     /** After {@link #refine()}: final index of each live speaker label (-1 if that voice vanished). */
     public int[] liveToFinal() {
         if (refined != null) {

@@ -56,6 +56,8 @@ public final class FileTranscriber {
                     public void onLevel(float dbfs, long positionMs) {
                     }
                 });
+                pipeline.setNeural(com.tlean07.totvs.audio.diar.NeuralDiarizer.ifAvailable(app),
+                        pct -> AppExecutors.main(() -> listener.onProgress(1, pct / 2)));
                 String modelo = null;
                 VoskModelManager models = VoskModelManager.get(app);
                 if (models.isReady()) {
@@ -132,6 +134,8 @@ public final class FileTranscriber {
                 });
                 TranscriptionEngine asr = new VoskEngine(models.load(), VoskModelManager.MODEL_LABEL, pipeline.asrListener());
                 pipeline.attachAsr(asr);
+                pipeline.setNeural(com.tlean07.totvs.audio.diar.NeuralDiarizer.ifAvailable(app),
+                        pct -> AppExecutors.main(() -> listener.onProgress(1, pct / 2)));
                 AudioFileDecoder.decode(app, Uri.fromFile(audio), scratch, pipeline::feed,
                         pct -> AppExecutors.main(() -> listener.onProgress(0, pct)));
                 AppExecutors.main(() -> listener.onProgress(1, 0));

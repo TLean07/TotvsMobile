@@ -33,7 +33,7 @@ import com.tlean07.totvs.audio.MeetingRecorderService;
 import com.tlean07.totvs.audio.RecorderSession;
 import com.tlean07.totvs.audio.RecorderSettings;
 import com.tlean07.totvs.audio.asr.TranscriptFormatter;
-import com.tlean07.totvs.audio.asr.VoskModelManager;
+import com.tlean07.totvs.audio.VoiceModels;
 import com.tlean07.totvs.audio.dsp.SpeakerDiarizer;
 import com.tlean07.totvs.audio.store.Recording;
 import com.tlean07.totvs.databinding.ActivityGravadorBinding;
@@ -49,11 +49,11 @@ import java.util.Locale;
  * chips (tap to name), live transcript and the on-device LeanIA signals,
  * driven by the {@link RecorderSession} owned by the foreground service.
  */
-public class GravadorActivity extends AppCompatActivity implements RecorderSession.Listener, VoskModelManager.Listener {
+public class GravadorActivity extends AppCompatActivity implements RecorderSession.Listener, VoiceModels.Listener {
 
     private ActivityGravadorBinding binding;
     private TurnoAdapter adapter;
-    private VoskModelManager models;
+    private VoiceModels models;
     private RecorderSettings settings;
     @Nullable
     private RecorderSession session;
@@ -84,7 +84,7 @@ public class GravadorActivity extends AppCompatActivity implements RecorderSessi
         SafeAreaHelper.applyTopInset(binding.gravHeader);
         SafeAreaHelper.applyBottomInset(binding.gravControls);
 
-        models = VoskModelManager.get(this);
+        models = VoiceModels.get(this);
         settings = new RecorderSettings(this);
         adapter = new TurnoAdapter(null);
         binding.gravTranscript.setLayoutManager(new LinearLayoutManager(this));
@@ -209,7 +209,7 @@ public class GravadorActivity extends AppCompatActivity implements RecorderSessi
             default:
                 new AlertDialog.Builder(this)
                         .setTitle(R.string.grav_model_prompt_title)
-                        .setMessage(getString(R.string.grav_model_prompt_message, VoskModelManager.MODEL_SIZE_MB))
+                        .setMessage(getString(R.string.grav_model_prompt_message, VoiceModels.MODEL_SIZE_MB))
                         .setPositiveButton(R.string.grav_model_prompt_download, (d, w) -> {
                             startAfterDownload = true;
                             models.download();
@@ -526,8 +526,8 @@ public class GravadorActivity extends AppCompatActivity implements RecorderSessi
     // --- model status ---
 
     @Override
-    public void onStatus(VoskModelManager.Status status, int progress, @Nullable String message) {
-        binding.gravAsrProgress.setVisibility(status == VoskModelManager.Status.DOWNLOADING ? View.VISIBLE : View.GONE);
+    public void onStatus(VoiceModels.Status status, int progress, @Nullable String message) {
+        binding.gravAsrProgress.setVisibility(status == VoiceModels.Status.DOWNLOADING ? View.VISIBLE : View.GONE);
         switch (status) {
             case READY:
                 binding.gravAsrText.setText(R.string.grav_asr_ready);
@@ -552,7 +552,7 @@ public class GravadorActivity extends AppCompatActivity implements RecorderSessi
             default:
                 startAfterDownload = false;
                 binding.gravAsrText.setText(message != null ? message
-                        : getString(R.string.grav_asr_absent, VoskModelManager.MODEL_SIZE_MB));
+                        : getString(R.string.grav_asr_absent, VoiceModels.MODEL_SIZE_MB));
                 binding.gravAsrButton.setVisibility(View.VISIBLE);
                 binding.gravAsrButton.setText(R.string.grav_asr_download);
                 break;

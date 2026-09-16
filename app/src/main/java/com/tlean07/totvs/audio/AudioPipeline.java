@@ -101,9 +101,18 @@ public final class AudioPipeline {
     private long lastPreviewCostMs;
     @Nullable
     private int[] displayedToFinal;
+    @Nullable
+    private final File wavFile;
+    @Nullable
+    private volatile com.tlean07.totvs.audio.diar.NeuralDiarizer neural;
+    @Nullable
+    private volatile com.tlean07.totvs.audio.diar.NeuralDiarizer.Progress neuralProgress;
+    /** Which pass produced the final labels ("neural" or "dsp"). */
+    private volatile String finalPass = "dsp";
 
     public AudioPipeline(@Nullable File wavFile, Listener listener) throws IOException {
         this.listener = listener;
+        this.wavFile = wavFile;
         this.wav = wavFile == null ? null : new WavIo.Writer(wavFile, FeatureExtractor.SAMPLE_RATE, 1);
         this.diarizer = new SpeakerDiarizer(new SpeakerDiarizer.Listener() {
             @Override
@@ -140,6 +149,20 @@ public final class AudioPipeline {
                 dirty = true;
             }
         });
+    }
+
+    /**
+     * Uses the neural speaker models for the final pass (needs the 16 kHz WAV this
+     * pipeline writes). Without it, or if it fails, the DSP pass runs.
+     */
+    public void setNeural(@Nullable com.tlean07.totvs.audio.diar.NeuralDiarizer neural,
+                          @Nullable com.tlean07.totvs.audio.diar.NeuralDiarizer.Progress progress) {
+        this.neural = neural;
+        this.neuralProgress = progress;
+    }
+
+    public String finalPass() {
+        return finalPass;
     }
 
     /** Plugs in the recogniser (created with {@link #asrListener()}); call before the first {@link #feed}. */
@@ -377,16 +400,36 @@ public final class AudioPipeline {
             displayed = new ArrayList<>(assembler.segments());
             displayedCount = Math.max(displaySpeakers, diarizer.speakerCount());
         }
-        List<SpeakerSegment> refined = diarizer.refine();
+        if (wav != null) {
+            wav.close();
+        }
+        List<SpeakerSegment> refined = null;
+        com.tlean07.totvs.audio.diar.NeuralDiarizer nn = neural;
+        if (nn != null && wavFile != null && wavFile.isFile() && wavFile.length() > 44) {
+            try {
+                long t0 = System.currentTimeMillis();
+                List<SpeakerSegment> segs = nn.run(wavFile, diarizer.frames(), neuralProgress);
+                if (!segs.isEmpty()) {
+                    diarizer.adopt(segs);
+                    refined = segs;
+                    finalPass = "neural";
+                    com.tlean07.totvs.util.Logger.d("AudioPipeline", "vozes (neural): " + diarizer.speakerCount()
+                            + " pessoas em " + (System.currentTimeMillis() - t0) + " ms");
+                }
+            } catch (IOException | RuntimeException | UnsatisfiedLinkError | OutOfMemoryError e) {
+                com.tlean07.totvs.util.Logger.w("AudioPipeline", "separação neural falhou, usando DSP: " + e);
+            }
+        }
+        if (refined == null) {
+            refined = diarizer.refine();
+            finalPass = "dsp";
+        }
         synchronized (lock) {
             displayedToFinal = overlapMap(displayed, displayedCount, refined, diarizer.speakerCount());
             assembler.clearOpenSegment();
             assembler.setPartial("", diarizer.positionMs());
             assembler.segments().clear();
             assembler.segments().addAll(refined);
-        }
-        if (wav != null) {
-            wav.close();
         }
         maybeSnapshot(true);
         return turns();

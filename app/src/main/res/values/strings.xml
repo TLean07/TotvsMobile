@@ -75,10 +75,10 @@
     <string name="grav_transcript_empty">A transcrição ao vivo aparece aqui.</string>
     <string name="grav_transcript_unavailable">Sem modelo de voz: a reunião será gravada e as pessoas identificadas, mas o texto só poderá ser gerado no servidor.</string>
     <string name="grav_asr_ready">Reconhecimento de voz em português pronto (offline).</string>
-    <string name="grav_asr_absent">Baixe o modelo de voz em português (%1$d MB, uma única vez) para transcrever no próprio celular.</string>
-    <string name="grav_asr_downloading">Baixando modelo de voz… %1$d%%</string>
+    <string name="grav_asr_absent">Baixe os modelos de voz (%1$d MB, uma única vez): transcrição em português e separação de vozes, tudo no próprio celular.</string>
+    <string name="grav_asr_downloading">Baixando modelos de voz… %1$d%%</string>
     <string name="grav_asr_unpacking">Instalando modelo de voz…</string>
-    <string name="grav_asr_download">Baixar modelo</string>
+    <string name="grav_asr_download">Baixar modelos</string>
     <string name="grav_asr_behind">Transcrição %1$d s atrás do áudio</string>
     <string name="grav_permission_needed">O app precisa do microfone para gravar a reunião.</string>
     <string name="grav_permission_settings">Permita o microfone nas configurações do app para gravar.</string>
@@ -125,10 +125,10 @@
     <string name="rev_transcribe_done">Transcrição concluída.</string>
     <string name="rev_transcribe_failed">Não foi possível transcrever: %1$s</string>
     <string name="rev_model_prompt_title">Baixar modelo de voz?</string>
-    <string name="rev_model_prompt_message">A transcrição é feita no próprio celular com um modelo de português de %1$d MB, baixado uma única vez. Baixar agora e transcrever esta gravação?</string>
+    <string name="rev_model_prompt_message">A transcrição e a separação de vozes são feitas no próprio celular com modelos de %1$d MB, baixados uma única vez. Baixar agora e transcrever esta gravação?</string>
     <string name="rev_model_prompt_download">Baixar e transcrever</string>
     <string name="grav_model_prompt_title">Gravar sem transcrição?</string>
-    <string name="grav_model_prompt_message">O modelo de voz em português (%1$d MB, uma única vez) ainda não foi baixado. Sem ele a reunião é gravada, mas fica sem texto e não pode ser enviada para análise.</string>
+    <string name="grav_model_prompt_message">Os modelos de voz (%1$d MB, uma única vez) ainda não foram baixados: transcrição em português e separação de vozes por rede neural. Sem eles a reunião é gravada, mas fica sem texto e a separação de pessoas é aproximada.</string>
     <string name="grav_model_prompt_download">Baixar e gravar</string>
     <string name="grav_model_prompt_skip">Gravar sem transcrição</string>
     <string name="grav_model_wait">Aguardando o download do modelo de voz para começar…</string>

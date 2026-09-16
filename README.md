@@ -57,6 +57,8 @@ mobile com **biometria**, **armazenamento via Android Keystore** e **vínculo de
   reconhecimento de falantes e transcrição no celular; opção de mandar o áudio para o servidor
 - **Microfone à escolha** — Celular, fone com fio, USB ou Bluetooth nas configurações da gravação;
   captura pelo caminho bruto do microfone na taxa nativa, sem supressor de ruído de chamada
+- **Quem falou, com rede neural** — Separação de vozes com sherpa-onnx (segmentação pyannote 3.0 +
+  embeddings WeSpeaker), modelos baixados uma vez; a passada DSP fica como reserva
 - **Quem falou, de verdade** — Ao terminar, a gravação inteira é reagrupada por voz (normalização
   da sala, teste estatístico de "uma voz ou duas", número de pessoas decidido pelos dados, resgate de
   quem só responde curto); nomes digitados ao vivo seguem a pessoa certa. "Transcrever agora" na

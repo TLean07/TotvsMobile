@@ -53,3 +53,6 @@
 -keep class * extends androidx.work.ListenableWorker { public <init>(...); }
 -keep class * implements androidx.startup.Initializer { public <init>(); }
 -keep class androidx.work.WorkManagerInitializer { *; }
+
+# sherpa-onnx (JNI looks classes up by name)
+-keep class com.k2fsa.sherpa.onnx.** { *; }

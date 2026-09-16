@@ -55,7 +55,27 @@ android {
     }
 }
 
+// sherpa-onnx (speaker diarization: pyannote segmentation + speaker embeddings, ONNX Runtime).
+// The AAR is 50 MB and not committed; it is fetched from the GitHub release on first build.
+def sherpaVersion = "1.13.8"
+def sherpaAar = file("libs/sherpa-onnx-${sherpaVersion}.aar")
+tasks.register("downloadSherpaOnnx") {
+    outputs.file(sherpaAar)
+    doLast {
+        if (!sherpaAar.exists()) {
+            sherpaAar.parentFile.mkdirs()
+            def url = "https://github.com/k2-fsa/sherpa-onnx/releases/download/v${sherpaVersion}/sherpa-onnx-${sherpaVersion}.aar"
+            logger.lifecycle("Baixando ${url}")
+            new URL(url).withInputStream { i -> sherpaAar.withOutputStream { o -> o << i } }
+        }
+    }
+}
+preBuild.dependsOn "downloadSherpaOnnx"
+
 dependencies {
+    implementation files(sherpaAar)
+    // the sherpa AAR is written in Kotlin
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.24"
     implementation libs.appcompat
     implementation libs.material
     implementation libs.recyclerview

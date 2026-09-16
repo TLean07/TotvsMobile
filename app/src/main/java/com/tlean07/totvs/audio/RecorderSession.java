@@ -65,6 +65,8 @@ public final class RecorderSession {
 
     private File dir;
     private AudioCapture capture;
+    /** 16 kHz copy of the audio for the neural speaker models; deleted once the recording is saved. */
+    static final String DSP_WAV = "dsp16k.wav";
     private AudioPipeline pipeline;
     private LiveInsights insights;
     private volatile State state = State.PREPARING;
@@ -193,7 +195,8 @@ public final class RecorderSession {
         AppExecutors.io(() -> {
             try {
                 dir = store.newDir();
-                pipeline = new AudioPipeline(null, pipelineListener);
+                pipeline = new AudioPipeline(new File(dir, DSP_WAV), pipelineListener);
+                pipeline.setNeural(com.tlean07.totvs.audio.diar.NeuralDiarizer.ifAvailable(app), null);
                 VoskModelManager models = VoskModelManager.get(app);
                 if (models.isReady()) {
                     try {
@@ -345,6 +348,8 @@ public final class RecorderSession {
                 AuthUser user = TotvsApp.get().session().getCurrentUser();
                 extras.userId = user == null ? null : user.id;
                 extras.insights = insights;
+                //noinspection ResultOfMethodCallIgnored
+                new File(dir, DSP_WAV).delete();
                 result = RecordingFinalizer.finish(app, store, dir, pipeline, turns, extras,
                         pct -> AppExecutors.main(() -> {
                             for (Listener l : new ArrayList<>(listeners)) {
